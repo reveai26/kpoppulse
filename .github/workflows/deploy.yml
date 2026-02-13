@@ -1,0 +1,30 @@
+name: Deploy to Cloudflare Workers
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx @opennextjs/cloudflare build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://shgmarjifhvwgojduwzn.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNoZ21hcmppZmh2d2dvamR1d3puIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5OTg2MDUsImV4cCI6MjA4NjU3NDYwNX0.sRhHsP_oy2tM4EDryAMDJTdzmdTV7siTOVzvxK3RvOc
+          NEXT_PUBLIC_APP_URL: https://kpoppulse.com
+
+      - run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: 81b3a0fbbf813fee5eaa92dd6f51bfc1
