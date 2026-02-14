@@ -7,6 +7,7 @@ import { Users, Calendar, Building2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JsonLd, musicGroupJsonLd, breadcrumbJsonLd, faqJsonLd } from "@/lib/jsonld";
+import { FollowButton } from "@/components/follow-button";
 import { SITE_URL } from "@/lib/constants";
 import type { Group, Idol } from "@/types";
 import type { Metadata } from "next";
@@ -128,9 +129,7 @@ export default async function GroupPage({ params }: Props) {
             <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{g.description}</p>
           )}
           <div className="mt-3">
-            <Button size="sm" className="gap-1" disabled title="Coming soon">
-              <Users className="h-3 w-3" /> Follow Group
-            </Button>
+            <FollowButton groupId={g.id} name={g.name} variant="group" />
           </div>
         </div>
       </div>

@@ -2,10 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Heart, Calendar, MapPin, Star, ArrowLeft, Users } from "lucide-react";
+import { Calendar, MapPin, Star, ArrowLeft, Users } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JsonLd, personJsonLd, breadcrumbJsonLd, faqJsonLd } from "@/lib/jsonld";
+import { FollowButton } from "@/components/follow-button";
 import { SITE_URL } from "@/lib/constants";
 import type { Group, Idol } from "@/types";
 import type { Metadata } from "next";
@@ -159,9 +160,7 @@ export default async function IdolPage({ params }: Props) {
           )}
 
           <div className="mt-3">
-            <Button size="sm" className="gap-1" disabled title="Coming soon">
-              <Heart className="h-3 w-3" /> Follow {i.name}
-            </Button>
+            <FollowButton idolId={i.id} name={i.name} variant="idol" />
           </div>
         </div>
       </div>
