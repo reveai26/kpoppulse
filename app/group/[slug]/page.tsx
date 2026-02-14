@@ -3,9 +3,11 @@ import { IdolCard } from "@/components/idol-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Users, Calendar, Building2, TrendingUp, ArrowLeft } from "lucide-react";
+import { Users, Calendar, Building2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { JsonLd, musicGroupJsonLd, breadcrumbJsonLd, faqJsonLd } from "@/lib/jsonld";
+import { SITE_URL } from "@/lib/constants";
 import type { Group, Idol } from "@/types";
 import type { Metadata } from "next";
 
@@ -21,9 +23,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .single();
 
   if (!group) return { title: "Group Not Found" };
+  const description = group.description || `${group.name} — K-pop group profile, members, and latest news on KpopPulse`;
   return {
-    title: `${group.name} — News & Members`,
-    description: group.description || `Latest K-pop news about ${group.name}`,
+    title: `${group.name} — Members & News`,
+    description,
+    alternates: { canonical: `/group/${slug}` },
+    openGraph: {
+      type: "profile",
+      title: `${group.name} — K-pop Group Profile`,
+      description,
+      url: `/group/${slug}`,
+    },
   };
 }
 
@@ -48,12 +58,42 @@ export default async function GroupPage({ params }: Props) {
   const idols = (members ?? []) as Idol[];
   const g = group as Group;
 
+  // GEO: FAQ data for AI engines
+  const faqData = [
+    {
+      question: `Who are the members of ${g.name}?`,
+      answer: idols.length > 0
+        ? `${g.name} has ${idols.length} members: ${idols.map(m => m.name).join(", ")}.`
+        : `${g.name} has ${g.member_count} members.`,
+    },
+    {
+      question: `What agency is ${g.name} under?`,
+      answer: `${g.name} is managed by ${g.agency}.`,
+    },
+    ...(g.debut_date ? [{
+      question: `When did ${g.name} debut?`,
+      answer: `${g.name} debuted on ${g.debut_date}.`,
+    }] : []),
+  ];
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
-      {/* Back */}
-      <Link href="/" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary">
-        <ArrowLeft className="h-4 w-4" /> Back to Feed
-      </Link>
+      <JsonLd data={musicGroupJsonLd(g, idols)} />
+      <JsonLd data={breadcrumbJsonLd([
+        { name: "Home", url: SITE_URL },
+        { name: "Groups", url: `${SITE_URL}/groups` },
+        { name: g.name, url: `${SITE_URL}/group/${slug}` },
+      ])} />
+      <JsonLd data={faqJsonLd(faqData)} />
+
+      {/* Breadcrumb nav */}
+      <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-1 text-xs text-muted-foreground">
+        <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+        <span>/</span>
+        <Link href="/groups" className="hover:text-primary transition-colors">Groups</Link>
+        <span>/</span>
+        <span>{g.name}</span>
+      </nav>
 
       {/* Group Header */}
       <div className="mb-6 flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">

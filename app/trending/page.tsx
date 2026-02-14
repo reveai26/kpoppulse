@@ -3,12 +3,20 @@ import { IdolCard } from "@/components/idol-card";
 import { GroupCard } from "@/components/group-card";
 import { Separator } from "@/components/ui/separator";
 import { TrendingUp, Users, Flame } from "lucide-react";
+import { JsonLd, collectionPageJsonLd } from "@/lib/jsonld";
+import { SITE_URL } from "@/lib/constants";
 import type { Group, Idol } from "@/types";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Trending",
-  description: "Discover what's trending in K-pop — buzzing idols and hot groups on KpopPulse",
+  title: "Trending in K-pop",
+  description: "Discover who's trending in K-pop right now. See the hottest idols and groups making waves — BTS, BLACKPINK, aespa, NewJeans and more.",
+  alternates: { canonical: "/trending" },
+  openGraph: {
+    title: "Trending in K-pop | KpopPulse",
+    description: "Discover who's trending in K-pop right now. See the hottest idols and groups making waves.",
+    url: "/trending",
+  },
 };
 
 export const revalidate = 300;
@@ -35,8 +43,19 @@ export default async function TrendingPage() {
   const idols = (allIdols ?? []) as (Idol & { group: Group })[];
   const groups = (allGroups ?? []) as Group[];
 
+  const allItems = [
+    ...idols.map((idol) => ({ name: idol.name, url: `${SITE_URL}/idol/${idol.slug}` })),
+    ...groups.map((group) => ({ name: group.name, url: `${SITE_URL}/group/${group.slug}` })),
+  ];
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-6">
+      <JsonLd data={collectionPageJsonLd(
+        "Trending in K-pop",
+        "Discover who's trending in K-pop right now",
+        `${SITE_URL}/trending`,
+        allItems
+      )} />
       <h1 className="mb-2 flex items-center gap-2 text-2xl font-bold">
         <TrendingUp className="h-6 w-6 text-primary" />
         Trending in K-pop

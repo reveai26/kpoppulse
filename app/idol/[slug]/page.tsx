@@ -2,9 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Heart, Calendar, MapPin, Star, TrendingUp, ArrowLeft, Users } from "lucide-react";
+import { Heart, Calendar, MapPin, Star, ArrowLeft, Users } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { JsonLd, personJsonLd, breadcrumbJsonLd, faqJsonLd } from "@/lib/jsonld";
+import { SITE_URL } from "@/lib/constants";
 import type { Group, Idol } from "@/types";
 import type { Metadata } from "next";
 
@@ -21,9 +23,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (!idol) return { title: "Idol Not Found" };
   const groupName = (idol as any).group?.name;
+  const description = `${idol.name}${groupName ? ` of ${groupName}` : ""} — K-pop idol profile and latest news on KpopPulse`;
   return {
-    title: `${idol.name}${groupName ? ` (${groupName})` : ""} — News`,
-    description: `Latest K-pop news about ${idol.name}`,
+    title: `${idol.name}${groupName ? ` (${groupName})` : ""} — Profile & News`,
+    description,
+    alternates: { canonical: `/idol/${slug}` },
+    openGraph: {
+      type: "profile",
+      title: `${idol.name} — K-pop Idol Profile`,
+      description,
+      url: `/idol/${slug}`,
+    },
   };
 }
 
@@ -54,11 +64,53 @@ export default async function IdolPage({ params }: Props) {
     groupMembers = (members ?? []) as Idol[];
   }
 
+  // GEO: FAQ data for AI engines
+  const faqData = [
+    ...(i.group ? [{
+      question: `What group is ${i.name} in?`,
+      answer: `${i.name} is a member of ${i.group.name}.`,
+    }] : []),
+    ...(i.position ? [{
+      question: `What is ${i.name}'s position?`,
+      answer: `${i.name}'s position is ${i.position}.`,
+    }] : []),
+    ...(i.nationality ? [{
+      question: `Where is ${i.name} from?`,
+      answer: `${i.name} is from ${i.nationality}.`,
+    }] : []),
+    ...(i.birth_date ? [{
+      question: `When was ${i.name} born?`,
+      answer: `${i.name} was born on ${i.birth_date}.`,
+    }] : []),
+  ];
+
+  const breadcrumbItems = [
+    { name: "Home", url: SITE_URL },
+    { name: "Idols", url: `${SITE_URL}/idols` },
+    ...(i.group ? [{ name: i.group.name, url: `${SITE_URL}/group/${i.group.slug}` }] : []),
+    { name: i.name, url: `${SITE_URL}/idol/${slug}` },
+  ];
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-6">
-      <Link href={i.group ? `/group/${i.group.slug}` : "/"} className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary">
-        <ArrowLeft className="h-4 w-4" /> {i.group ? `Back to ${i.group.name}` : "Back to Feed"}
-      </Link>
+      <JsonLd data={personJsonLd(i)} />
+      <JsonLd data={breadcrumbJsonLd(breadcrumbItems)} />
+      {faqData.length > 0 && <JsonLd data={faqJsonLd(faqData)} />}
+
+      {/* Breadcrumb nav */}
+      <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-1 text-xs text-muted-foreground">
+        <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+        <span>/</span>
+        <Link href="/idols" className="hover:text-primary transition-colors">Idols</Link>
+        {i.group && (
+          <>
+            <span>/</span>
+            <Link href={`/group/${i.group.slug}`} className="hover:text-primary transition-colors">{i.group.name}</Link>
+          </>
+        )}
+        <span>/</span>
+        <span>{i.name}</span>
+      </nav>
 
       {/* Idol Header */}
       <div className="mb-6 flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">

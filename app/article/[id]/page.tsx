@@ -6,6 +6,8 @@ import { ArrowLeft, Clock, ExternalLink, Newspaper } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
+import { JsonLd, newsArticleJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
+import { SITE_URL } from "@/lib/constants";
 import type { ArticleWithDetails } from "@/types";
 import type { Metadata } from "next";
 
@@ -18,8 +20,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { data: article } = await supabase
     .from("articles")
     .select(`
-      original_title,
-      translations(translated_title, language)
+      original_title, thumbnail_url, published_at,
+      translations(translated_title, translated_summary, language)
     `)
     .eq("id", id)
     .eq("translations.language", "en")
@@ -29,10 +31,26 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const translation = (article as any).translations?.[0];
   const title = translation?.translated_title || article.original_title;
+  const description = translation?.translated_summary || `Read the latest K-pop news: ${title}`;
 
   return {
     title,
-    description: `Read the latest K-pop news: ${title}`,
+    description,
+    alternates: { canonical: `/article/${id}` },
+    openGraph: {
+      type: "article",
+      title,
+      description,
+      url: `/article/${id}`,
+      publishedTime: article.published_at,
+      images: article.thumbnail_url ? [{ url: article.thumbnail_url, width: 1200, height: 630 }] : [],
+    },
+    twitter: {
+      card: article.thumbnail_url ? "summary_large_image" : "summary",
+      title,
+      description,
+      images: article.thumbnail_url ? [article.thumbnail_url] : [],
+    },
   };
 }
 
@@ -76,30 +94,41 @@ export default async function ArticlePage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
-      {/* Back */}
-      <Link
-        href="/"
-        className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary"
-      >
-        <ArrowLeft className="h-4 w-4" /> Back to Feed
-      </Link>
+      <JsonLd data={newsArticleJsonLd(article)} />
+      <JsonLd
+        data={breadcrumbJsonLd([
+          { name: "Home", url: SITE_URL },
+          { name: "News", url: SITE_URL },
+          { name: article.translation.translated_title, url: `${SITE_URL}/article/${id}` },
+        ])}
+      />
 
-      {/* Article Header */}
-      <article>
-        <h1 className="text-2xl font-bold leading-tight mb-3">
+      {/* Breadcrumb nav */}
+      <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-1 text-xs text-muted-foreground">
+        <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+        <span>/</span>
+        <span className="truncate max-w-[200px]">{article.translation.translated_title}</span>
+      </nav>
+
+      {/* Article */}
+      <article itemScope itemType="https://schema.org/NewsArticle">
+        <meta itemProp="datePublished" content={article.published_at} />
+        <meta itemProp="dateModified" content={article.collected_at} />
+
+        <h1 itemProp="headline" className="text-2xl font-bold leading-tight mb-3">
           {article.translation.translated_title}
         </h1>
 
         {/* Meta */}
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mb-4">
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1" itemProp="publisher" itemScope itemType="https://schema.org/Organization">
             <Newspaper className="h-4 w-4" />
-            {article.source.name}
+            <span itemProp="name">{article.source.name}</span>
           </span>
-          <span className="flex items-center gap-1">
+          <time className="flex items-center gap-1" dateTime={article.published_at}>
             <Clock className="h-4 w-4" />
             {timeAgo}
-          </span>
+          </time>
           <a
             href={article.original_url}
             target="_blank"
@@ -117,10 +146,7 @@ export default async function ArticlePage({ params }: Props) {
           <div className="flex flex-wrap gap-1.5 mb-4">
             {article.mentioned_groups.map((g) => (
               <Link key={g.id} href={`/group/${g.slug}`}>
-                <Badge
-                  variant="secondary"
-                  className="text-xs cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
-                >
+                <Badge className="text-xs cursor-pointer bg-primary/10 text-primary border-0 hover:bg-primary/20">
                   {g.name}
                 </Badge>
               </Link>
@@ -129,7 +155,7 @@ export default async function ArticlePage({ params }: Props) {
               <Link key={idol.id} href={`/idol/${idol.slug}`}>
                 <Badge
                   variant="outline"
-                  className="text-xs cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                  className="text-xs cursor-pointer border-pink-300/50 text-pink-600 dark:border-pink-500/30 dark:text-pink-400 hover:bg-pink-50 dark:hover:bg-pink-950/20"
                 >
                   {idol.name}
                 </Badge>
@@ -145,7 +171,8 @@ export default async function ArticlePage({ params }: Props) {
           <div className="mb-6 overflow-hidden rounded-lg">
             <img
               src={article.thumbnail_url}
-              alt=""
+              alt={article.translation.translated_title}
+              itemProp="image"
               className="w-full object-cover max-h-96"
             />
           </div>
@@ -157,7 +184,7 @@ export default async function ArticlePage({ params }: Props) {
             <p className="text-sm font-medium mb-1 text-muted-foreground">
               Summary
             </p>
-            <p className="text-sm leading-relaxed">
+            <p className="text-sm leading-relaxed" itemProp="description">
               {article.translation.translated_summary}
             </p>
           </Card>
@@ -165,7 +192,7 @@ export default async function ArticlePage({ params }: Props) {
 
         {/* Full Content */}
         {article.translation.translated_content && (
-          <div className="prose prose-sm max-w-none mb-6">
+          <div className="prose prose-sm max-w-none mb-6" itemProp="articleBody">
             <p className="text-sm leading-relaxed whitespace-pre-line">
               {article.translation.translated_content}
             </p>
@@ -179,19 +206,21 @@ export default async function ArticlePage({ params }: Props) {
           <p className="text-xs text-muted-foreground mb-1">
             Original Korean Title
           </p>
-          <p className="text-sm font-medium">{article.original_title}</p>
+          <p className="text-sm font-medium" lang="ko">{article.original_title}</p>
         </div>
 
         {/* Published Date */}
         <div className="text-xs text-muted-foreground">
           Published:{" "}
-          {new Date(article.published_at).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
+          <time dateTime={article.published_at}>
+            {new Date(article.published_at).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </time>
         </div>
       </article>
     </div>
