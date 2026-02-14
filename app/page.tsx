@@ -4,7 +4,7 @@ import { GroupCard } from "@/components/group-card";
 import { ArticleCard } from "@/components/article-card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { TrendingUp, Newspaper, Users, Crown, Sparkles } from "lucide-react";
+import { TrendingUp, Newspaper, Users, Flame, Sparkles } from "lucide-react";
 import Link from "next/link";
 import type { Group, Idol, ArticleWithDetails } from "@/types";
 
@@ -67,15 +67,15 @@ export default async function HomePage() {
         <aside className="hidden lg:block">
           <div className="sticky top-20 space-y-4">
             <div className="flex items-center gap-2">
-              <Crown className="h-4 w-4 text-primary" />
-              <h2 className="font-bold text-sm">Idol Rankings</h2>
-              <Link href="/rankings" className="ml-auto text-xs text-primary hover:underline">
+              <Flame className="h-4 w-4 text-orange-500" />
+              <h2 className="font-bold text-sm">Trending Idols</h2>
+              <Link href="/trending" className="ml-auto text-xs text-primary hover:underline">
                 View All
               </Link>
             </div>
             <div className="space-y-2">
-              {idols.slice(0, 10).map((idol, i) => (
-                <IdolCard key={idol.id} idol={idol} rank={i + 1} />
+              {idols.slice(0, 10).map((idol) => (
+                <IdolCard key={idol.id} idol={idol} />
               ))}
             </div>
 
@@ -83,14 +83,14 @@ export default async function HomePage() {
 
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-primary" />
-              <h2 className="font-bold text-sm">Top Groups</h2>
+              <h2 className="font-bold text-sm">Popular Groups</h2>
               <Link href="/groups" className="ml-auto text-xs text-primary hover:underline">
                 View All
               </Link>
             </div>
             <div className="space-y-2">
-              {groups.slice(0, 5).map((group, i) => (
-                <GroupCard key={group.id} group={group} rank={i + 1} />
+              {groups.slice(0, 5).map((group) => (
+                <GroupCard key={group.id} group={group} />
               ))}
             </div>
           </div>
@@ -105,7 +105,6 @@ export default async function HomePage() {
           </div>
 
           <div className="space-y-6">
-            {/* Articles or Coming Soon */}
             {hasArticles ? (
               <div className="space-y-3">
                 {articles.map((article) => (
@@ -123,41 +122,51 @@ export default async function HomePage() {
               </div>
             )}
 
-            {/* Mobile idol rankings */}
+            {/* Mobile: Trending Idols — horizontal scroll */}
             <div className="lg:hidden">
               <h2 className="flex items-center gap-2 font-bold text-sm mb-3">
-                <Crown className="h-4 w-4 text-primary" />
-                Idol Rankings
+                <Flame className="h-4 w-4 text-orange-500" />
+                Trending Idols
+                <Link href="/trending" className="ml-auto text-xs text-primary hover:underline font-normal">
+                  View All
+                </Link>
               </h2>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {idols.slice(0, 10).map((idol, i) => (
-                  <IdolCard key={idol.id} idol={idol} rank={i + 1} />
+              <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-none">
+                {idols.slice(0, 12).map((idol) => (
+                  <div key={idol.id} className="min-w-[220px] snap-start">
+                    <IdolCard idol={idol} />
+                  </div>
                 ))}
               </div>
             </div>
 
-            {/* All Groups */}
-            <div>
-              <h2 className="flex items-center gap-2 font-bold mb-3">
+            {/* Mobile: Browse Groups — horizontal scroll */}
+            <div className="lg:hidden">
+              <h2 className="flex items-center gap-2 font-bold text-sm mb-3">
                 <Users className="h-4 w-4 text-primary" />
                 Browse Groups
+                <Link href="/groups" className="ml-auto text-xs text-primary hover:underline font-normal">
+                  View All
+                </Link>
               </h2>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {groups.map((group, i) => (
-                  <GroupCard key={group.id} group={group} rank={i + 1} />
+              <div className="flex gap-2 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-none">
+                {groups.map((group) => (
+                  <div key={group.id} className="min-w-[220px] snap-start">
+                    <GroupCard group={group} />
+                  </div>
                 ))}
               </div>
             </div>
 
-            {/* Top Idols */}
-            <div>
+            {/* Desktop: Featured Idols grid (below feed) */}
+            <div className="hidden lg:block">
               <h2 className="flex items-center gap-2 font-bold mb-3">
                 <TrendingUp className="h-4 w-4 text-primary" />
-                Top Idols
+                Featured Idols
               </h2>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {idols.map((idol, i) => (
-                  <IdolCard key={idol.id} idol={idol} rank={i + 1} />
+              <div className="grid grid-cols-2 gap-2">
+                {idols.slice(10, 20).map((idol) => (
+                  <IdolCard key={idol.id} idol={idol} />
                 ))}
               </div>
             </div>
@@ -173,13 +182,12 @@ export default async function HomePage() {
             </div>
 
             <div className="rounded-lg border p-3 space-y-3">
-              {groups.slice(0, 8).map((group, i) => (
+              {groups.slice(0, 8).map((group) => (
                 <Link
                   key={group.id}
                   href={`/group/${group.slug}`}
                   className="flex items-center gap-2 text-sm hover:text-primary transition-colors"
                 >
-                  <span className="w-5 text-xs text-muted-foreground font-mono">{i + 1}.</span>
                   <span className="font-medium truncate">{group.name}</span>
                   <span className="ml-auto text-[10px] text-muted-foreground">{group.name_ko}</span>
                 </Link>
@@ -197,7 +205,7 @@ export default async function HomePage() {
                   <Badge
                     key={agency}
                     variant="outline"
-                    className="text-[10px] cursor-pointer hover:bg-primary hover:text-primary-foreground transition-colors"
+                    className="text-[10px]"
                   >
                     {agency}
                   </Badge>

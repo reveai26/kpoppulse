@@ -61,8 +61,8 @@ export default async function IdolPage({ params }: Props) {
       </Link>
 
       {/* Idol Header */}
-      <div className="mb-6 flex items-start gap-6">
-        <div className="h-28 w-28 flex-shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5">
+      <div className="mb-6 flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
+        <div className="h-28 w-28 flex-shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 ring-2 ring-primary/10">
           {i.photo_url ? (
             <img src={i.photo_url} alt={i.name} className="h-full w-full object-cover" />
           ) : (
@@ -71,8 +71,8 @@ export default async function IdolPage({ params }: Props) {
             </div>
           )}
         </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex-1 text-center sm:text-left">
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start sm:gap-3">
             <h1 className="text-2xl font-bold">{i.name}</h1>
             <Badge variant="secondary">{i.name_ko}</Badge>
             {i.group && (
@@ -84,7 +84,7 @@ export default async function IdolPage({ params }: Props) {
             )}
           </div>
 
-          <div className="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground">
+          <div className="mt-2 flex flex-wrap justify-center gap-3 text-sm text-muted-foreground sm:justify-start sm:gap-4">
             {i.position && (
               <span className="flex items-center gap-1">
                 <Star className="h-4 w-4" /> {i.position}
@@ -100,12 +100,6 @@ export default async function IdolPage({ params }: Props) {
                 <MapPin className="h-4 w-4" /> {i.nationality}
               </span>
             )}
-            <span className="flex items-center gap-1">
-              <TrendingUp className="h-4 w-4" /> Score: {i.popularity_score.toLocaleString()}
-            </span>
-            <span className="flex items-center gap-1">
-              <Users className="h-4 w-4" /> {i.follower_count.toLocaleString()} followers
-            </span>
           </div>
 
           {i.description && (
@@ -113,7 +107,7 @@ export default async function IdolPage({ params }: Props) {
           )}
 
           <div className="mt-3">
-            <Button size="sm" className="gap-1">
+            <Button size="sm" className="gap-1" disabled title="Coming soon">
               <Heart className="h-3 w-3" /> Follow {i.name}
             </Button>
           </div>

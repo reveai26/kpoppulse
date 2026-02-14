@@ -14,10 +14,10 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
 
   return (
     <Card className="group overflow-hidden transition-all hover:shadow-md hover:border-primary/30">
-      <Link href={`/article/${article.id}`} className="flex gap-4 p-4">
+      <Link href={`/article/${article.id}`} className="flex gap-4 p-4 sm:p-5">
         {/* Thumbnail */}
         {article.thumbnail_url && (
-          <div className="hidden h-24 w-24 flex-shrink-0 overflow-hidden rounded-lg sm:block">
+          <div className="hidden h-28 w-28 flex-shrink-0 overflow-hidden rounded-lg sm:block">
             <img
               src={article.thumbnail_url}
               alt=""
@@ -28,30 +28,30 @@ export const ArticleCard = ({ article }: ArticleCardProps) => {
 
         {/* Content */}
         <div className="min-w-0 flex-1">
-          <h3 className="line-clamp-2 font-semibold text-sm leading-snug group-hover:text-primary transition-colors">
+          <h3 className="line-clamp-2 font-semibold text-base leading-snug group-hover:text-primary transition-colors">
             {article.translation.translated_title}
           </h3>
 
-          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground leading-relaxed">
+          <p className="mt-1.5 line-clamp-3 text-sm text-muted-foreground leading-relaxed">
             {article.translation.translated_summary}
           </p>
 
           {/* Tags */}
-          <div className="mt-2 flex flex-wrap gap-1">
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
             {article.mentioned_groups.map((g) => (
-              <Badge key={g.id} variant="secondary" className="text-[10px] px-1.5 py-0">
+              <Badge key={g.id} className="text-[10px] px-2 py-0.5 bg-primary/10 text-primary border-0 hover:bg-primary/20">
                 {g.name}
               </Badge>
             ))}
             {article.mentioned_idols.map((idol) => (
-              <Badge key={idol.id} variant="outline" className="text-[10px] px-1.5 py-0">
+              <Badge key={idol.id} variant="outline" className="text-[10px] px-2 py-0.5 border-pink-300/50 text-pink-600 dark:border-pink-500/30 dark:text-pink-400">
                 {idol.name}
               </Badge>
             ))}
           </div>
 
           {/* Meta */}
-          <div className="mt-2 flex items-center gap-3 text-[11px] text-muted-foreground">
+          <div className="mt-2.5 flex items-center gap-3 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
               {timeAgo}

@@ -10,3 +10,6 @@ binding = "ASSETS"
 
 [ai]
 binding = "AI"
+
+[triggers]
+crons = ["*/15 * * * *"]

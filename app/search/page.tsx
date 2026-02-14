@@ -68,7 +68,7 @@ export default async function SearchPage({ searchParams }: Props) {
           <h2 className="mb-3 font-bold">Groups ({groups.length})</h2>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {groups.map((group, i) => (
-              <GroupCard key={group.id} group={group as Group} rank={i + 1} />
+              <GroupCard key={group.id} group={group as Group} />
             ))}
           </div>
         </div>
@@ -79,7 +79,7 @@ export default async function SearchPage({ searchParams }: Props) {
           <h2 className="mb-3 font-bold">Idols ({idols.length})</h2>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             {idols.map((idol, i) => (
-              <IdolCard key={idol.id} idol={idol as Idol & { group: Group }} rank={i + 1} />
+              <IdolCard key={idol.id} idol={idol as Idol & { group: Group }} />
             ))}
           </div>
         </div>

@@ -56,8 +56,8 @@ export default async function GroupPage({ params }: Props) {
       </Link>
 
       {/* Group Header */}
-      <div className="mb-6 flex items-start gap-6">
-        <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5">
+      <div className="mb-6 flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
+        <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 ring-2 ring-primary/10">
           {g.photo_url ? (
             <img src={g.photo_url} alt={g.name} className="h-full w-full object-cover" />
           ) : (
@@ -66,12 +66,12 @@ export default async function GroupPage({ params }: Props) {
             </div>
           )}
         </div>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
+        <div className="flex-1 text-center sm:text-left">
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start sm:gap-3">
             <h1 className="text-2xl font-bold">{g.name}</h1>
             <Badge variant="secondary" className="text-xs">{g.name_ko}</Badge>
           </div>
-          <div className="mt-2 flex flex-wrap gap-4 text-sm text-muted-foreground">
+          <div className="mt-2 flex flex-wrap justify-center gap-3 text-sm text-muted-foreground sm:justify-start sm:gap-4">
             <span className="flex items-center gap-1">
               <Building2 className="h-4 w-4" /> {g.agency}
             </span>
@@ -83,15 +83,12 @@ export default async function GroupPage({ params }: Props) {
             <span className="flex items-center gap-1">
               <Users className="h-4 w-4" /> {g.member_count} members
             </span>
-            <span className="flex items-center gap-1">
-              <TrendingUp className="h-4 w-4" /> Score: {g.popularity_score.toLocaleString()}
-            </span>
           </div>
           {g.description && (
             <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{g.description}</p>
           )}
           <div className="mt-3">
-            <Button size="sm" className="gap-1">
+            <Button size="sm" className="gap-1" disabled title="Coming soon">
               <Users className="h-3 w-3" /> Follow Group
             </Button>
           </div>
@@ -109,7 +106,7 @@ export default async function GroupPage({ params }: Props) {
         </h2>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {idols.map((idol, i) => (
-            <IdolCard key={idol.id} idol={{ ...idol, group: g }} rank={i + 1} showGroup={false} />
+            <IdolCard key={idol.id} idol={{ ...idol, group: g }} showGroup={false} />
           ))}
         </div>
       </div>

@@ -35,7 +35,7 @@ export default async function GroupsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {groups.map((group, i) => (
-            <GroupCard key={group.id} group={group as Group} rank={i + 1} />
+            <GroupCard key={group.id} group={group as Group} />
           ))}
         </div>
       )}
