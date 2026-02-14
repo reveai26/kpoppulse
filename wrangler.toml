@@ -7,3 +7,6 @@ find_additional_modules = true
 [assets]
 directory = ".open-next/assets"
 binding = "ASSETS"
+
+[ai]
+binding = "AI"

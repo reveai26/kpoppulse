@@ -1,73 +1,114 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 
-// Korean entertainment news RSS feeds
-const RSS_SOURCES = [
-  {
-    name: "Naver Entertainment",
-    rssUrl: "https://rss.blog.naver.com/PostKeywordRss.naver?encodingType=utf8&keyword=%EC%95%84%EC%9D%B4%EB%8F%8C",
-  },
+// Korean K-pop news search queries for Google News RSS
+const KPOP_QUERIES = [
+  "케이팝 아이돌 뉴스",
+  "아이돌 컴백 앨범 발매",
+  "걸그룹 보이그룹 활동",
+  "K-pop 콘서트 차트 빌보드",
 ];
 
-// Simple RSS parser (no external dependency)
-async function fetchRssArticles(rssUrl: string): Promise<{ title: string; link: string; pubDate: string }[]> {
+// Map Korean outlet names to our DB source names
+const SOURCE_NAME_MAP: Record<string, string> = {
+  "오센": "OSEN",
+  "스포츠조선": "Sports Chosun",
+  "스타뉴스": "Star News",
+  "뉴스엔": "Newsen",
+  "헤럴드팝": "Herald Pop",
+  "엑스포츠뉴스": "Xportsnews",
+  "MK스포츠": "MK Sports",
+  "스포티비뉴스": "SPOTV News",
+  "톱스타뉴스": "Top Star News",
+  "텐아시아": "Tenasia",
+  "디스패치": "Dispatch",
+  "데일리팝": "Daily Pop",
+  "아이돌이슈": "Idol Issue",
+  "코리아헤럴드": "K-pop Herald",
+};
+
+function decodeHtml(str: string): string {
+  return str
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;/g, "'");
+}
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, " ").trim();
+}
+
+type RssItem = {
+  title: string;
+  link: string;
+  pubDate: string;
+  sourceName: string;
+  sourceUrl: string;
+  description: string;
+};
+
+async function fetchRss(url: string): Promise<RssItem[]> {
   try {
-    const res = await fetch(rssUrl, {
-      headers: { "User-Agent": "KpopPulse/1.0 (news aggregator)" },
-      signal: AbortSignal.timeout(10000),
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        Accept: "application/rss+xml, application/xml, text/xml, */*",
+      },
+      signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return [];
     const xml = await res.text();
 
-    const items: { title: string; link: string; pubDate: string }[] = [];
+    const items: RssItem[] = [];
     const itemRegex = /<item>([\s\S]*?)<\/item>/g;
     let match;
+
     while ((match = itemRegex.exec(xml)) !== null) {
-      const item = match[1];
-      const title = item.match(/<title><!\[CDATA\[(.*?)\]\]>/)?.[1]
-        || item.match(/<title>(.*?)<\/title>/)?.[1]
-        || "";
-      const link = item.match(/<link>(.*?)<\/link>/)?.[1] || "";
-      const pubDate = item.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] || new Date().toISOString();
+      const raw = match[1];
+
+      const title =
+        raw.match(/<title><!\[CDATA\[([\s\S]*?)\]\]>/)?.[1] ??
+        raw.match(/<title>([\s\S]*?)<\/title>/)?.[1] ??
+        "";
+
+      // Google News RSS sometimes uses <link/> followed by URL on next line
+      const link =
+        raw.match(/<link>([\s\S]*?)<\/link>/)?.[1]?.trim() ??
+        raw.match(/<link\s*\/>\s*(https?:\/\/[^\s<]+)/)?.[1]?.trim() ??
+        "";
+
+      const pubDate = raw.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] ?? "";
+
+      const srcMatch = raw.match(/<source\s+url="([^"]*)"[^>]*>([\s\S]*?)<\/source>/);
+      const sourceName = srcMatch?.[2]?.trim() ?? "";
+      const sourceUrl = srcMatch?.[1]?.trim() ?? "";
+
+      const desc =
+        raw.match(/<description><!\[CDATA\[([\s\S]*?)\]\]>/)?.[1] ??
+        raw.match(/<description>([\s\S]*?)<\/description>/)?.[1] ??
+        "";
+
       if (title && link) {
-        items.push({ title: title.trim(), link: link.trim(), pubDate });
+        items.push({
+          title: decodeHtml(title.trim()),
+          link,
+          pubDate,
+          sourceName: decodeHtml(sourceName),
+          sourceUrl,
+          description: stripHtml(decodeHtml(desc)).substring(0, 500),
+        });
       }
     }
+
     return items;
   } catch {
     return [];
   }
 }
 
-// Scrape Korean entertainment news from web (backup when RSS unavailable)
-async function scrapeNaverEntertainment(): Promise<{ title: string; link: string; pubDate: string }[]> {
-  try {
-    const res = await fetch("https://entertain.naver.com/ranking", {
-      headers: { "User-Agent": "KpopPulse/1.0" },
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!res.ok) return [];
-    const html = await res.text();
-
-    const articles: { title: string; link: string; pubDate: string }[] = [];
-    // Extract article links and titles from ranking page
-    const linkRegex = /href="(https:\/\/entertain\.naver\.com\/read\?oid=\d+&aid=\d+)"[^>]*>([^<]+)/g;
-    let match;
-    while ((match = linkRegex.exec(html)) !== null) {
-      articles.push({
-        link: match[1],
-        title: match[2].trim(),
-        pubDate: new Date().toISOString(),
-      });
-    }
-    return articles.slice(0, 30);
-  } catch {
-    return [];
-  }
-}
-
 export async function POST(request: NextRequest) {
-  // Simple auth check
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -75,65 +116,109 @@ export async function POST(request: NextRequest) {
 
   const serviceClient = createServiceClient();
 
-  // Get active sources
-  const { data: sources } = await serviceClient
+  // Load existing sources and build lookup map
+  const { data: dbSources } = await serviceClient
     .from("sources")
-    .select("*")
-    .eq("is_active", true);
+    .select("id, name");
+
+  const sourceByName = new Map<string, string>();
+  for (const s of dbSources ?? []) {
+    sourceByName.set(s.name.toLowerCase(), s.id);
+  }
+
+  // Add Korean alias lookups
+  for (const [korean, english] of Object.entries(SOURCE_NAME_MAP)) {
+    const id = sourceByName.get(english.toLowerCase());
+    if (id) sourceByName.set(korean.toLowerCase(), id);
+  }
+
+  // Track dynamically created sources in this run
+  const createdSources = new Map<string, string>();
+
+  async function resolveSource(name: string, url: string): Promise<string> {
+    if (!name) name = "Unknown";
+
+    // Try existing (exact or alias match)
+    const id = sourceByName.get(name.toLowerCase());
+    if (id) return id;
+
+    // Try partial match
+    for (const [key, val] of sourceByName.entries()) {
+      if (key.includes(name.toLowerCase()) || name.toLowerCase().includes(key)) {
+        return val;
+      }
+    }
+
+    // Check if created this run
+    const created = createdSources.get(name);
+    if (created) return created;
+
+    // Create new source record
+    const { data } = await serviceClient
+      .from("sources")
+      .insert({ name, url: url || "https://news.google.com", category: "news" })
+      .select("id")
+      .single();
+
+    if (data) {
+      createdSources.set(name, data.id);
+      sourceByName.set(name.toLowerCase(), data.id);
+      return data.id;
+    }
+
+    // Absolute fallback: first source in DB
+    return dbSources?.[0]?.id ?? "";
+  }
 
   let totalCollected = 0;
   const errors: string[] = [];
+  const seenUrls = new Set<string>();
 
-  // Try Naver scraping as primary source
-  const naverArticles = await scrapeNaverEntertainment();
-  if (naverArticles.length > 0) {
-    const naverSource = sources?.find((s: any) => s.name === "Naver Entertainment");
-    if (naverSource) {
-      for (const article of naverArticles) {
-        const { error } = await serviceClient
-          .from("articles")
-          .upsert(
-            {
-              source_id: naverSource.id,
-              original_url: article.link,
-              original_title: article.title,
-              published_at: article.pubDate,
-            },
-            { onConflict: "original_url" }
-          );
-        if (!error) totalCollected++;
-      }
-    }
-  }
-
-  // Try RSS feeds
-  for (const source of sources ?? []) {
-    if (!source.rss_url) continue;
+  for (const query of KPOP_QUERIES) {
     try {
-      const articles = await fetchRssArticles(source.rss_url);
+      const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=ko&gl=KR&ceid=KR:ko`;
+      const articles = await fetchRss(rssUrl);
+
       for (const article of articles) {
-        const { error } = await serviceClient
-          .from("articles")
-          .upsert(
-            {
-              source_id: source.id,
-              original_url: article.link,
-              original_title: article.title,
-              published_at: new Date(article.pubDate).toISOString(),
-            },
-            { onConflict: "original_url" }
-          );
+        if (seenUrls.has(article.link)) continue;
+        seenUrls.add(article.link);
+
+        const sourceId = await resolveSource(article.sourceName, article.sourceUrl);
+
+        let publishedAt: string;
+        try {
+          publishedAt = article.pubDate
+            ? new Date(article.pubDate).toISOString()
+            : new Date().toISOString();
+        } catch {
+          publishedAt = new Date().toISOString();
+        }
+
+        const { error } = await serviceClient.from("articles").upsert(
+          {
+            source_id: sourceId,
+            original_url: article.link,
+            original_title: article.title,
+            original_content: article.description || null,
+            published_at: publishedAt,
+          },
+          { onConflict: "original_url" }
+        );
+
         if (!error) totalCollected++;
+        else errors.push(`DB: ${error.message}`);
       }
     } catch (e: any) {
-      errors.push(`${source.name}: ${e.message}`);
+      errors.push(`Feed "${query}": ${e.message}`);
     }
   }
 
   return NextResponse.json({
     collected: totalCollected,
-    sources: sources?.length ?? 0,
-    errors,
+    newSources: createdSources.size,
+    newSourceNames: [...createdSources.keys()],
+    feedsChecked: KPOP_QUERIES.length,
+    errors: errors.slice(0, 10),
     timestamp: new Date().toISOString(),
   });
 }

@@ -8,7 +8,8 @@ import { Suspense } from "react";
 
 const LoginContent = () => {
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/";
+  const rawRedirect = searchParams.get("redirect") || "/";
+  const redirect = rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") ? rawRedirect : "/";
 
   const handleGoogleLogin = async () => {
     const supabase = createClient();

@@ -13,7 +13,11 @@ export const revalidate = 300;
 export default async function HomePage() {
   const supabase = await createClient();
 
-  const [{ data: topIdols }, { data: topGroups }, { data: rawArticles }] = await Promise.all([
+  const [
+    { data: topIdols, error: idolsError },
+    { data: topGroups, error: groupsError },
+    { data: rawArticles, error: articlesError },
+  ] = await Promise.all([
     supabase
       .from("idols")
       .select("*, group:groups(*)")
@@ -38,6 +42,10 @@ export default async function HomePage() {
       .order("published_at", { ascending: false })
       .limit(30),
   ]);
+
+  if (idolsError) console.error("Home idols query error:", idolsError.message);
+  if (groupsError) console.error("Home groups query error:", groupsError.message);
+  if (articlesError) console.error("Home articles query error:", articlesError.message);
 
   const idols = (topIdols ?? []) as (Idol & { group: Group })[];
   const groups = (topGroups ?? []) as Group[];

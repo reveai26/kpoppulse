@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
-import { getOpenAI } from "@/lib/openai";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
@@ -9,123 +9,185 @@ export async function POST(request: NextRequest) {
   }
 
   const serviceClient = createServiceClient();
-  const openai = getOpenAI();
 
-  // Get untranslated articles (batch of 10)
+  // Get batch size from query param (default 5, max 15 to stay within limits)
+  const url = new URL(request.url);
+  const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "5") || 5, 15);
+
+  // Get untranslated articles
   const { data: articles } = await serviceClient
     .from("articles")
     .select("id, original_title, original_content")
     .eq("is_translated", false)
     .order("published_at", { ascending: false })
-    .limit(10);
+    .limit(limit);
 
   if (!articles || articles.length === 0) {
     return NextResponse.json({ translated: 0, message: "No articles to translate" });
   }
 
-  let translated = 0;
-  const errors: string[] = [];
-
   // Get all idols and groups for tagging
-  const { data: idols } = await serviceClient
-    .from("idols")
-    .select("id, name, name_ko, group_id");
-  const { data: groups } = await serviceClient
-    .from("groups")
-    .select("id, name, name_ko");
+  const [{ data: idols }, { data: groups }] = await Promise.all([
+    serviceClient.from("idols").select("id, name, name_ko, group_id"),
+    serviceClient.from("groups").select("id, name, name_ko"),
+  ]);
+
+  // Get Cloudflare Workers AI binding
+  const { env } = await getCloudflareContext({ async: true });
+  const ai = (env as any).AI;
+
+  const translations: any[] = [];
+  const idolTags: any[] = [];
+  const groupTags: any[] = [];
+  const translatedIds: string[] = [];
+  const errors: string[] = [];
 
   for (const article of articles) {
     try {
-      // Translate title + generate summary
-      const prompt = `You are a K-pop news translator. Translate this Korean article title to English. Also write a 1-2 sentence summary in English based on the title.
+      const prompt = `You are a K-pop news translator. Translate this Korean news headline into natural, engaging English. Then write a 1-2 sentence summary that provides context for international K-pop fans.
 
-Korean title: ${article.original_title}
-${article.original_content ? `\nKorean content preview: ${article.original_content.substring(0, 500)}` : ""}
+Korean headline: ${article.original_title}
+${article.original_content ? `\nContext: ${article.original_content.substring(0, 500)}` : ""}
 
-Respond in this exact JSON format:
-{"title": "English translated title", "summary": "1-2 sentence English summary"}`;
+Important:
+- Keep idol/group names in their official romanized form (e.g., 방탄소년단 = BTS, 블랙핑크 = BLACKPINK, 에스파 = aespa, 뉴진스 = NewJeans)
+- Make the title concise and news-like
+- The summary should explain what happened and why it matters to fans
 
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
+Respond ONLY with valid JSON (no markdown, no explanation):
+{"title": "English title here", "summary": "1-2 sentence summary here"}`;
+
+      const aiResult = await ai.run("@cf/meta/llama-3.1-8b-instruct", {
         messages: [{ role: "user", content: prompt }],
-        response_format: { type: "json_object" },
         max_tokens: 300,
         temperature: 0.3,
       });
 
-      const result = JSON.parse(completion.choices[0].message.content || "{}");
+      // Workers AI returns { response: string }
+      let responseText = "";
+      if (typeof aiResult === "string") {
+        responseText = aiResult;
+      } else if (typeof aiResult?.response === "string") {
+        responseText = aiResult.response;
+      } else {
+        responseText = JSON.stringify(aiResult);
+      }
 
-      if (result.title && result.summary) {
-        // Save translation
-        await serviceClient.from("translations").upsert(
-          {
-            article_id: article.id,
-            language: "en",
-            translated_title: result.title,
-            translated_summary: result.summary,
-            model_used: "gpt-4o-mini",
-          },
-          { onConflict: "article_id,language" }
-        );
+      if (!responseText || responseText === "{}") {
+        errors.push(`Article ${article.id}: Empty AI response (type: ${typeof aiResult}, keys: ${Object.keys(aiResult || {}).join(",")})`);
+        continue;
+      }
 
-        // Tag idols and groups mentioned in the title
-        const titleText = `${article.original_title} ${result.title}`.toLowerCase();
+      // Extract JSON from response (handle potential markdown wrapping)
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        errors.push(`Article ${article.id}: No JSON found: ${responseText.substring(0, 150)}`);
+        continue;
+      }
 
-        for (const idol of idols ?? []) {
-          if (
-            titleText.includes(idol.name.toLowerCase()) ||
-            titleText.includes(idol.name_ko)
-          ) {
-            await serviceClient
-              .from("article_idols")
-              .upsert(
-                { article_id: article.id, idol_id: idol.id, confidence: 0.9 },
-                { onConflict: "article_id,idol_id" }
-              );
+      const result = JSON.parse(jsonMatch[0]);
 
-            // Also tag the group if idol belongs to one
-            if (idol.group_id) {
-              await serviceClient
-                .from("article_groups")
-                .upsert(
-                  { article_id: article.id, group_id: idol.group_id, confidence: 0.9 },
-                  { onConflict: "article_id,group_id" }
-                );
-            }
+      if (!result.title || !result.summary) {
+        errors.push(`Article ${article.id}: Missing fields: ${JSON.stringify(result).substring(0, 150)}`);
+        continue;
+      }
+
+      translations.push({
+        article_id: article.id,
+        language: "en",
+        translated_title: result.title,
+        translated_summary: result.summary,
+        model_used: "llama-3.1-8b",
+      });
+      translatedIds.push(article.id);
+
+      // Find matching idols and groups
+      const titleText = `${article.original_title} ${result.title} ${result.summary}`.toLowerCase();
+
+      for (const idol of idols ?? []) {
+        const nameMatch =
+          titleText.includes(idol.name.toLowerCase()) ||
+          (idol.name_ko && titleText.includes(idol.name_ko));
+
+        if (nameMatch) {
+          idolTags.push({ article_id: article.id, idol_id: idol.id, confidence: 0.9 });
+          if (idol.group_id) {
+            groupTags.push({ article_id: article.id, group_id: idol.group_id, confidence: 0.9 });
           }
         }
+      }
 
-        for (const group of groups ?? []) {
-          if (
-            titleText.includes(group.name.toLowerCase()) ||
-            titleText.includes(group.name_ko)
-          ) {
-            await serviceClient
-              .from("article_groups")
-              .upsert(
-                { article_id: article.id, group_id: group.id, confidence: 0.9 },
-                { onConflict: "article_id,group_id" }
-              );
-          }
+      for (const group of groups ?? []) {
+        const nameMatch =
+          titleText.includes(group.name.toLowerCase()) ||
+          (group.name_ko && titleText.includes(group.name_ko));
+
+        if (nameMatch) {
+          groupTags.push({ article_id: article.id, group_id: group.id, confidence: 0.9 });
         }
-
-        // Mark as translated + tagged
-        await serviceClient
-          .from("articles")
-          .update({ is_translated: true, is_tagged: true })
-          .eq("id", article.id);
-
-        translated++;
       }
     } catch (e: any) {
       errors.push(`Article ${article.id}: ${e.message}`);
     }
   }
 
+  // Batch upsert all translations
+  if (translations.length > 0) {
+    const { error: translationsError } = await serviceClient
+      .from("translations")
+      .upsert(translations, { onConflict: "article_id,language" });
+    if (translationsError) {
+      errors.push(`Translations upsert: ${translationsError.message}`);
+    }
+  }
+
+  // Batch upsert idol tags (deduplicate)
+  if (idolTags.length > 0) {
+    const uniqueIdolTags = dedup(idolTags, (t: any) => `${t.article_id}-${t.idol_id}`);
+    const { error: idolTagsError } = await serviceClient
+      .from("article_idols")
+      .upsert(uniqueIdolTags, { onConflict: "article_id,idol_id" });
+    if (idolTagsError) {
+      errors.push(`Idol tags upsert: ${idolTagsError.message}`);
+    }
+  }
+
+  // Batch upsert group tags (deduplicate)
+  if (groupTags.length > 0) {
+    const uniqueGroupTags = dedup(groupTags, (t: any) => `${t.article_id}-${t.group_id}`);
+    const { error: groupTagsError } = await serviceClient
+      .from("article_groups")
+      .upsert(uniqueGroupTags, { onConflict: "article_id,group_id" });
+    if (groupTagsError) {
+      errors.push(`Group tags upsert: ${groupTagsError.message}`);
+    }
+  }
+
+  // Batch mark articles as translated
+  if (translatedIds.length > 0) {
+    const { error: updateError } = await serviceClient
+      .from("articles")
+      .update({ is_translated: true, is_tagged: true })
+      .in("id", translatedIds);
+    if (updateError) {
+      errors.push(`Articles update: ${updateError.message}`);
+    }
+  }
+
   return NextResponse.json({
-    translated,
+    translated: translations.length,
     total: articles.length,
-    errors,
+    errors: errors.slice(0, 10),
     timestamp: new Date().toISOString(),
+  });
+}
+
+function dedup<T>(arr: T[], keyFn: (item: T) => string): T[] {
+  const seen = new Set<string>();
+  return arr.filter((item) => {
+    const key = keyFn(item);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
   });
 }

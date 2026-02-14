@@ -52,6 +52,8 @@ export type Article = {
   original_title: string;
   original_content: string | null;
   thumbnail_url: string | null;
+  is_translated: boolean;
+  is_tagged: boolean;
   published_at: string;
   collected_at: string;
   source?: Source;
@@ -76,6 +78,7 @@ export type Profile = {
   email: string;
   display_name: string | null;
   avatar_url: string | null;
+  role: "user" | "admin" | "super_admin";
   plan: "free" | "pro" | "premium";
   preferred_language: string;
   daily_reads_today: number;

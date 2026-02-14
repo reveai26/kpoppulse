@@ -30,19 +30,29 @@ export default async function SearchPage({ searchParams }: Props) {
 
   const supabase = await createClient();
 
-  const { data: idols } = await supabase
+  // Escape special PostgREST/LIKE characters to prevent injection
+  const escaped = q.replace(/[%_\\(),."']/g, "");
+
+  const { data: idols, error: idolsError } = await supabase
     .from("idols")
     .select("*, group:groups(*)")
-    .or(`name.ilike.%${q}%,name_ko.ilike.%${q}%,slug.ilike.%${q}%`)
+    .or(`name.ilike.%${escaped}%,name_ko.ilike.%${escaped}%,slug.ilike.%${escaped}%`)
     .order("popularity_score", { ascending: false })
     .limit(20);
 
-  const { data: groups } = await supabase
+  const { data: groups, error: groupsError } = await supabase
     .from("groups")
     .select("*")
-    .or(`name.ilike.%${q}%,name_ko.ilike.%${q}%,slug.ilike.%${q}%`)
+    .or(`name.ilike.%${escaped}%,name_ko.ilike.%${escaped}%,slug.ilike.%${escaped}%`)
     .order("popularity_score", { ascending: false })
     .limit(20);
+
+  if (idolsError) {
+    console.error("Search idols error:", idolsError.message);
+  }
+  if (groupsError) {
+    console.error("Search groups error:", groupsError.message);
+  }
 
   const totalResults = (idols?.length ?? 0) + (groups?.length ?? 0);
 
