@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { PLANS } from "@/lib/constants";
 import { NextRequest, NextResponse } from "next/server";
 
 // GET: check if current user follows a specific idol or group
@@ -36,15 +37,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "idol_id or group_id required" }, { status: 400 });
   }
 
-  // Check existing follow count (for plan limits)
-  const { count } = await supabase
-    .from("follows")
-    .select("*", { count: "exact", head: true })
-    .eq("user_id", user.id);
+  // Check plan-based follow limit
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("plan")
+    .eq("id", user.id)
+    .single();
 
-  const MAX_FREE_FOLLOWS = 50; // generous limit for now
-  if ((count ?? 0) >= MAX_FREE_FOLLOWS) {
-    return NextResponse.json({ error: "Follow limit reached" }, { status: 403 });
+  const plan = (profile?.plan ?? "free") as keyof typeof PLANS;
+  const maxFollows = PLANS[plan]?.maxFollows ?? PLANS.free.maxFollows;
+
+  if (maxFollows > 0) {
+    const { count } = await supabase
+      .from("follows")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id);
+
+    if ((count ?? 0) >= maxFollows) {
+      return NextResponse.json(
+        { error: "Follow limit reached. Upgrade your plan for more follows.", limit: maxFollows, plan },
+        { status: 403 },
+      );
+    }
   }
 
   const { data, error } = await supabase

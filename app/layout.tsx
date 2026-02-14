@@ -56,6 +56,12 @@ export default function RootLayout({
             __html: `if(typeof globalThis.__name==="undefined"){globalThis.__name=function(t,v){Object.defineProperty(t,"name",{value:v,configurable:true});return t}}`,
           }}
         />
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-FSQ5Y78VKE" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-FSQ5Y78VKE');`,
+          }}
+        />
         <JsonLd data={organizationJsonLd()} />
         <JsonLd data={webSiteJsonLd()} />
       </head>

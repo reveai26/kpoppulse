@@ -24,8 +24,12 @@
 | Super Admin | aireve26@gmail.com |
 | Supabase | shgmarjifhvwgojduwzn (Seoul) |
 | Cloudflare Account | 81b3a0fbbf813fee5eaa92dd6f51bfc1 |
-| Polar Org | 0ccf1684-f42a-463f-8ff0-1bd51bae3ce6 (reveai com.) |
+| Polar Org | 211a9a89-3b74-4ea8-a084-bc37c93e722d (K-POP_Pulse_reveAI) |
+| Polar Pro Product ID | f5152e27-259a-45e9-be43-9be89e1cc87d |
+| Polar Premium Product ID | a7e58669-57be-459c-9b82-e2d5877299b9 |
 | Google OAuth | Configured in Supabase (see global CLAUDE.md for credentials) |
+| GA4 Property | G-FSQ5Y78VKE |
+| Resend API Key | re_aeEv7ter_EBQVb6YPLJSwqXV54cvAmh5H |
 
 ---
 
@@ -148,12 +152,55 @@ Seed data: 15 news sources, 40+ groups, 90+ idols
 - [x] globals.css: 중복 규칙 제거, 다크모드 primary 보라색 유지
 - [x] Cron job: 15분마다 자동 수집+번역 (`/api/cron/news`)
 
-### 🔲 Phase 2 (다음 작업)
-- [ ] Auth 관련 페이지: /my-feed, /my-idols, /bookmarks, /settings, /billing
-- [ ] Follow/unfollow API routes
-- [ ] Polar 상품 생성 (Pro $4.99/mo, Premium $9.99/mo)
-- [ ] 커스텀 도메인 연결 (kpoppulse.com)
+### ✅ Phase 2 — 결제 시스템 (2026-02-15)
+- [x] Polar 조직 생성 (K-POP_Pulse_reveAI)
+- [x] Polar 상품 생성 (Pro $4.99/mo, Premium $9.99/mo)
+- [x] Polar Webhook 등록
+- [x] /api/checkout — Polar checkout 세션 생성
+- [x] /api/checkout/verify — Checkout 검증 (webhook 백업)
+- [x] /api/webhooks/polar — Webhook 수신 + DB 동기화
+- [x] /api/user/subscription — 구독 상태 조회
+- [x] /billing — 요금제 페이지 (3 tier 카드)
+- [x] 팔로우 제한: 요금제별 적용 (Free 3, Pro 20, Premium 무제한)
+- [x] Daily Digest 크론 (/api/cron/daily-digest) — Pro+ 유저에게 일일 뉴스 이메일
+- [x] 헤더에 Plans & Billing 메뉴 추가
+- [x] lib/polar.ts, lib/email.ts 헬퍼
+- [x] Resend 패키지 설치
 - [x] Google OAuth 설정 (Supabase Provider + Google Cloud redirect URI)
+
+### ✅ Phase 2 — 추가 작업 (2026-02-15)
+- [x] GA4 설정 (G-FSQ5Y78VKE)
+- [x] Admin 대시보드 (/admin) — Overview, Members, Subscriptions, GA4 탭
+- [x] Resend API Key 설정 완료
+- [x] Cloudflare Workers Secrets 설정 완료 (POLAR_*, RESEND_API_KEY)
+- [x] 결제 비활성화 (PAYMENTS_ENABLED = false) — 테스트 완료 전까지
+
+### 🔲 내일 할 일 (Phase 2 마무리 + Phase 3)
+
+#### 결제 오픈 전 필수
+- [ ] Polar Stripe Connect 온보딩 (polar.sh → Settings → Stripe Connect) — 실결제 수령용
+- [ ] Resend 도메인 인증 (kpoppulse.com 또는 임시 도메인) — 이메일 발송 실패 방지
+- [ ] Checkout → Webhook → DB 동기화 전체 플로우 테스트 (sandbox or 실결제)
+- [ ] 테스트 완료 후 `PAYMENTS_ENABLED = true` 로 변경 + 재배포
+- [ ] billing-cards.tsx "Coming Soon" → 원래 "Upgrade to Pro/Premium" 버튼 복원
+
+#### Auth 관련 페이지
+- [ ] /my-feed — 팔로우한 아이돌/그룹 뉴스만 모아보는 피드
+- [ ] /my-idols — 내 팔로우 관리 대시보드
+- [ ] /bookmarks — 저장한 기사 (bookmarks 테이블 활용)
+- [ ] /settings — 유저 설정 (언어, 다이제스트 on/off 등)
+
+#### 도메인 & 인프라
+- [ ] kpoppulse.com 커스텀 도메인 연결 (Cloudflare Zone 추가 → Workers 도메인 바인딩)
+- [ ] Supabase Auth redirect URL에 커스텀 도메인 추가
+- [ ] Google Cloud OAuth에 커스텀 도메인 등록
+- [ ] .env.production, sitemap, robots, 메타데이터에 도메인 반영
+
+#### Phase 3 — 그로스
+- [ ] Product Hunt 런칭 준비
+- [ ] SEO 최적화 (구조화 데이터 보강, 아이돌별 페이지 meta)
+- [ ] 소셜 공유 기능
+- [ ] 다국어 지원 (i18n)
 
 ---
 

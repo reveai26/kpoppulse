@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, Menu, X, Sun, Moon, LogOut, User } from "lucide-react";
+import { Search, Menu, X, Sun, Moon, LogOut, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
@@ -148,6 +148,13 @@ export const Header = () => {
                   <p className="text-sm font-medium truncate">{userName}</p>
                 </div>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href="/billing">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    Plans & Billing
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
                   Sign Out
@@ -196,6 +203,14 @@ export const Header = () => {
                       </Avatar>
                       <span className="text-sm truncate">{userName}</span>
                     </div>
+                    <Link
+                      href="/billing"
+                      onClick={() => setSheetOpen(false)}
+                      className="flex items-center gap-2 rounded-md px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                    >
+                      <CreditCard className="h-4 w-4" />
+                      Plans & Billing
+                    </Link>
                     <Button
                       variant="outline"
                       size="sm"

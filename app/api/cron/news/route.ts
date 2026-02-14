@@ -36,9 +36,26 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Daily Digest: run once per day at ~09:00 UTC (cron runs every 15min)
+  const hour = new Date().getUTCHours();
+  const minute = new Date().getUTCMinutes();
+  let digestResult = null;
+  if (hour === 9 && minute < 15) {
+    try {
+      const digestRes = await fetch(`${baseUrl}/api/cron/daily-digest`, {
+        headers,
+      });
+      digestResult = await digestRes.json();
+      if (!digestRes.ok) errors.push(`Digest failed: ${JSON.stringify(digestResult)}`);
+    } catch (e: any) {
+      errors.push(`Digest error: ${e.message}`);
+    }
+  }
+
   return NextResponse.json({
     success: errors.length === 0,
     errors: errors.slice(0, 10),
+    digest: digestResult,
     timestamp: new Date().toISOString(),
   });
 }
