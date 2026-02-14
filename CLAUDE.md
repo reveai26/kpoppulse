@@ -25,6 +25,7 @@
 | Supabase | shgmarjifhvwgojduwzn (Seoul) |
 | Cloudflare Account | 81b3a0fbbf813fee5eaa92dd6f51bfc1 |
 | Polar Org | 0ccf1684-f42a-463f-8ff0-1bd51bae3ce6 (reveai com.) |
+| Google OAuth | Configured in Supabase (see global CLAUDE.md for credentials) |
 
 ---
 
@@ -152,7 +153,7 @@ Seed data: 15 news sources, 40+ groups, 90+ idols
 - [ ] Follow/unfollow API routes
 - [ ] Polar 상품 생성 (Pro $4.99/mo, Premium $9.99/mo)
 - [ ] 커스텀 도메인 연결 (kpoppulse.com)
-- [ ] Google OAuth 설정
+- [x] Google OAuth 설정 (Supabase Provider + Google Cloud redirect URI)
 
 ---
 

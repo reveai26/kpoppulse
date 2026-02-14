@@ -1,13 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { Search, Menu, X, Sun, Moon } from "lucide-react";
+import { Search, Menu, X, Sun, Moon, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { useState } from "react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
+import { createClient } from "@/lib/supabase/client";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 const NAV_ITEMS = [
   { href: "/", label: "Feed" },
@@ -20,9 +24,24 @@ export const Header = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,10 +52,20 @@ export const Header = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  };
+
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
     return pathname.startsWith(href);
   };
+
+  const userInitial = user?.user_metadata?.full_name?.[0] ?? user?.email?.[0]?.toUpperCase() ?? "U";
+  const userAvatar = user?.user_metadata?.avatar_url;
+  const userName = user?.user_metadata?.full_name ?? user?.email;
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -101,9 +130,35 @@ export const Header = () => {
             <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
           </Button>
 
-          <Link href="/login" className="hidden md:block">
-            <Button size="sm">Sign In</Button>
-          </Link>
+          {/* Auth: User menu or Sign In */}
+          {user ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={userAvatar} alt={userName ?? ""} />
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                      {userInitial}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <div className="px-2 py-1.5">
+                  <p className="text-sm font-medium truncate">{userName}</p>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut} className="text-destructive cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Link href="/login" className="hidden md:block">
+              <Button size="sm">Sign In</Button>
+            </Link>
+          )}
 
           {/* Mobile Sheet menu */}
           <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -130,9 +185,31 @@ export const Header = () => {
                   </Link>
                 ))}
                 <div className="my-2 h-px bg-border" />
-                <Link href="/login" onClick={() => setSheetOpen(false)}>
-                  <Button className="w-full" size="sm">Sign In</Button>
-                </Link>
+                {user ? (
+                  <>
+                    <div className="flex items-center gap-2 px-4 py-2">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={userAvatar} alt={userName ?? ""} />
+                        <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">
+                          {userInitial}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm truncate">{userName}</span>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mx-4"
+                      onClick={() => { setSheetOpen(false); handleSignOut(); }}
+                    >
+                      <LogOut className="mr-2 h-3 w-3" /> Sign Out
+                    </Button>
+                  </>
+                ) : (
+                  <Link href="/login" onClick={() => setSheetOpen(false)}>
+                    <Button className="w-full" size="sm">Sign In</Button>
+                  </Link>
+                )}
               </nav>
             </SheetContent>
           </Sheet>
