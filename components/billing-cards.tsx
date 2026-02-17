@@ -179,8 +179,16 @@ export const BillingCards = () => {
                     Current Plan
                   </Button>
                 ) : isUpgrade ? (
-                  <Button className="w-full" variant="secondary" disabled>
-                    Coming Soon
+                  <Button
+                    className="w-full"
+                    onClick={() => handleCheckout(key)}
+                    disabled={!!checkoutLoading}
+                  >
+                    {checkoutLoading === key ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</>
+                    ) : (
+                      `Upgrade to ${plan.name}`
+                    )}
                   </Button>
                 ) : (
                   <Button className="w-full" variant="ghost" disabled>

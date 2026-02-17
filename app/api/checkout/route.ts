@@ -2,8 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getPolar } from "@/lib/polar";
 import { NextRequest, NextResponse } from "next/server";
 
-// TODO: Remove this flag when payment system is fully tested
-const PAYMENTS_ENABLED = false;
+const PAYMENTS_ENABLED = true;
 
 export async function POST(request: NextRequest) {
   if (!PAYMENTS_ENABLED) {
