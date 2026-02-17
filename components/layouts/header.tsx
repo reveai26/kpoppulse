@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { createClient } from "@/lib/supabase/client";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 const NAV_ITEMS = [
@@ -118,6 +119,9 @@ export const Header = () => {
               <Search className="h-4 w-4" />
             </Button>
           )}
+
+          {/* Language switcher */}
+          <LanguageSwitcher />
 
           {/* Dark mode toggle */}
           <Button

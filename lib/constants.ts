@@ -1,6 +1,6 @@
 export const SITE_NAME = "KpopPulse";
 export const SITE_DESCRIPTION = "Real-time AI-translated K-pop news, personalized by your favorite idols. Follow BTS, BLACKPINK, aespa, NewJeans and 90+ idols.";
-export const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kpoppulse.aireve26.workers.dev";
+export const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kpoppulse.app";
 export const SITE_KEYWORDS = ["K-pop news", "K-pop idols", "BTS", "BLACKPINK", "aespa", "NewJeans", "Korean pop", "K-pop translation", "K-pop groups", "idol news"];
 
 export const PLANS = {

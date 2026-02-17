@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
             byIdol.get(name)!.push({
               title: trans.translated_title,
               summary: trans.translated_summary ?? "",
-              url: `https://kpoppulse.aireve26.workers.dev/article/${article.id}`,
+              url: `https://kpoppulse.app/article/${article.id}`,
             });
           }
           for (const [name, articles] of byIdol) {
@@ -128,7 +128,7 @@ export async function GET(request: NextRequest) {
             byGroup.get(name)!.push({
               title: trans.translated_title,
               summary: trans.translated_summary ?? "",
-              url: `https://kpoppulse.aireve26.workers.dev/article/${article.id}`,
+              url: `https://kpoppulse.app/article/${article.id}`,
             });
           }
           for (const [name, articles] of byGroup) {

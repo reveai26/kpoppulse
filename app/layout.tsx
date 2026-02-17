@@ -11,7 +11,7 @@ const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://kpoppulse.aireve26.workers.dev"),
+  metadataBase: new URL("https://kpoppulse.app"),
   title: { default: `${SITE_NAME} — Real-time K-pop News`, template: `%s | ${SITE_NAME}` },
   description: SITE_DESCRIPTION,
   keywords: SITE_KEYWORDS,

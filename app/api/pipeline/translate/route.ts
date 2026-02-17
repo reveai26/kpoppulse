@@ -2,6 +2,50 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
+// Names that are too short or common for simple substring matching
+// These require word boundary matching to avoid false positives
+const SHORT_AMBIGUOUS_NAMES = new Set([
+  "v", "rm", "jin", "han", "jun", "dk", "the8", "i.n",
+  "jay", "rei", "liz", "key", "do", "lay", "chen",
+  "joy", "mark", "win", "ten", "leon",
+]);
+
+function matchName(
+  name: string,
+  nameKo: string | null,
+  text: string,
+): { confidence: number } | null {
+  const nameLower = name.toLowerCase();
+
+  // Korean name match — reliable, use directly (min 2 chars)
+  if (nameKo && nameKo.length >= 2 && text.includes(nameKo)) {
+    return { confidence: 0.95 };
+  }
+
+  // Skip single-character English names entirely (too ambiguous)
+  if (nameLower.length <= 1) {
+    return null;
+  }
+
+  // For short/ambiguous names, require word boundary matching
+  if (nameLower.length <= 3 || SHORT_AMBIGUOUS_NAMES.has(nameLower)) {
+    // Use word boundary regex for short names
+    const escaped = nameLower.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`\\b${escaped}\\b`, "i");
+    if (regex.test(text)) {
+      return { confidence: 0.8 };
+    }
+    return null;
+  }
+
+  // For longer names (4+ chars), simple includes is reliable enough
+  if (text.toLowerCase().includes(nameLower)) {
+    return { confidence: 0.9 };
+  }
+
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`) {
@@ -101,29 +145,25 @@ Respond ONLY with valid JSON (no markdown, no explanation):
       });
       translatedIds.push(article.id);
 
-      // Find matching idols and groups
-      const titleText = `${article.original_title} ${result.title} ${result.summary}`.toLowerCase();
+      // Find matching idols and groups with improved accuracy
+      const originalText = article.original_title + " " + (article.original_content ?? "");
+      const translatedText = `${result.title} ${result.summary}`;
+      const fullText = `${originalText} ${translatedText}`;
 
       for (const idol of idols ?? []) {
-        const nameMatch =
-          titleText.includes(idol.name.toLowerCase()) ||
-          (idol.name_ko && titleText.includes(idol.name_ko));
-
-        if (nameMatch) {
-          idolTags.push({ article_id: article.id, idol_id: idol.id, confidence: 0.9 });
+        const matched = matchName(idol.name, idol.name_ko, fullText);
+        if (matched) {
+          idolTags.push({ article_id: article.id, idol_id: idol.id, confidence: matched.confidence });
           if (idol.group_id) {
-            groupTags.push({ article_id: article.id, group_id: idol.group_id, confidence: 0.9 });
+            groupTags.push({ article_id: article.id, group_id: idol.group_id, confidence: matched.confidence });
           }
         }
       }
 
       for (const group of groups ?? []) {
-        const nameMatch =
-          titleText.includes(group.name.toLowerCase()) ||
-          (group.name_ko && titleText.includes(group.name_ko));
-
-        if (nameMatch) {
-          groupTags.push({ article_id: article.id, group_id: group.id, confidence: 0.9 });
+        const matched = matchName(group.name, group.name_ko, fullText);
+        if (matched) {
+          groupTags.push({ article_id: article.id, group_id: group.id, confidence: matched.confidence });
         }
       }
     } catch (e: any) {

@@ -67,6 +67,18 @@ export const newsArticleJsonLd = (article: ArticleWithDetails) => ({
       url: `${SITE_URL}/idol/${idol.slug}`,
     })),
   ],
+  mentions: [
+    ...article.mentioned_groups.map((g) => ({
+      "@type": "MusicGroup",
+      name: g.name,
+      url: `${SITE_URL}/group/${g.slug}`,
+    })),
+    ...article.mentioned_idols.map((idol) => ({
+      "@type": "Person",
+      name: idol.name,
+      url: `${SITE_URL}/idol/${idol.slug}`,
+    })),
+  ],
 });
 
 // Person schema for idols (GEO: explicit entity data)
@@ -82,6 +94,7 @@ export const personJsonLd = (idol: Idol & { group?: Group | null }) => {
     jobTitle: idol.position || "K-pop Idol",
     nationality: idol.nationality ? { "@type": "Country", name: idol.nationality } : undefined,
     birthDate: idol.birth_date || undefined,
+    inLanguage: "en",
   };
 
   if (idol.group) {
@@ -111,6 +124,7 @@ export const musicGroupJsonLd = (group: Group, members?: Idol[]) => {
     description: group.description || `${group.name} (${group.name_ko}) is a K-pop group under ${group.agency} with ${group.member_count} members.`,
     foundingDate: group.debut_date || undefined,
     numberOfEmployees: group.member_count,
+    inLanguage: "en",
   };
 
   if (group.agency) {

@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
-    "https://kpoppulse.aireve26.workers.dev";
+    "https://kpoppulse.app";
 
   const checkout = await getPolar().checkouts.create({
     products: [productId],

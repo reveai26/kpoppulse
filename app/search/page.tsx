@@ -12,6 +12,7 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
   return {
     title: q ? `Search: ${q}` : "Search",
     description: "Search K-pop idols, groups, and news on KpopPulse",
+    alternates: { canonical: "/search" },
   };
 }
 

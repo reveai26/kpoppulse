@@ -62,15 +62,15 @@ export async function sendDailyDigest(
   <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0">
   <p style="font-size:12px;color:#9ca3af;text-align:center">
     You're receiving this because you subscribed to KpopPulse Daily Digest.<br>
-    <a href="https://kpoppulse.aireve26.workers.dev/settings" style="color:#a855f7">Manage preferences</a>
+    <a href="https://kpoppulse.app/settings" style="color:#a855f7">Manage preferences</a>
     &middot;
-    <a href="https://kpoppulse.aireve26.workers.dev/billing" style="color:#a855f7">Manage subscription</a>
+    <a href="https://kpoppulse.app/billing" style="color:#a855f7">Manage subscription</a>
   </p>
 </body>
 </html>`;
 
   return getResend().emails.send({
-    from: "KpopPulse <digest@kpoppulse.aireve26.workers.dev>",
+    from: "KpopPulse <digest@kpoppulse.app>",
     to,
     subject: `Your Daily K-pop Digest — ${date}`,
     html,

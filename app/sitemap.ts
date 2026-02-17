@@ -13,7 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .select("id, published_at")
       .eq("is_translated", true)
       .order("published_at", { ascending: false })
-      .limit(200),
+      .limit(1000),
   ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [

@@ -8,6 +8,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JsonLd, musicGroupJsonLd, breadcrumbJsonLd, faqJsonLd } from "@/lib/jsonld";
 import { FollowButton } from "@/components/follow-button";
+import { ShareButtons } from "@/components/share-buttons";
 import { SITE_URL } from "@/lib/constants";
 import type { Group, Idol } from "@/types";
 import type { Metadata } from "next";
@@ -97,10 +98,10 @@ export default async function GroupPage({ params }: Props) {
       </nav>
 
       {/* Group Header */}
-      <div className="mb-6 flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
+      <div className="mb-6 flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6" itemScope itemType="https://schema.org/MusicGroup">
         <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 ring-2 ring-primary/10">
           {g.photo_url ? (
-            <img src={g.photo_url} alt={g.name} className="h-full w-full object-cover" />
+            <img src={g.photo_url} alt={g.name} itemProp="image" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-primary/60">
               {g.name[0]}
@@ -109,27 +110,28 @@ export default async function GroupPage({ params }: Props) {
         </div>
         <div className="flex-1 text-center sm:text-left">
           <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start sm:gap-3">
-            <h1 className="text-2xl font-bold">{g.name}</h1>
-            <Badge variant="secondary" className="text-xs">{g.name_ko}</Badge>
+            <h1 className="text-2xl font-bold" itemProp="name">{g.name}</h1>
+            <Badge variant="secondary" className="text-xs"><span itemProp="alternateName">{g.name_ko}</span></Badge>
           </div>
           <div className="mt-2 flex flex-wrap justify-center gap-3 text-sm text-muted-foreground sm:justify-start sm:gap-4">
-            <span className="flex items-center gap-1">
-              <Building2 className="h-4 w-4" /> {g.agency}
+            <span className="flex items-center gap-1" itemProp="managementCompany" itemScope itemType="https://schema.org/Organization">
+              <Building2 className="h-4 w-4" /> <span itemProp="name">{g.agency}</span>
             </span>
             {g.debut_date && (
               <span className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" /> Debut: {g.debut_date}
+                <Calendar className="h-4 w-4" /> Debut: <time itemProp="foundingDate" content={g.debut_date}>{g.debut_date}</time>
               </span>
             )}
             <span className="flex items-center gap-1">
-              <Users className="h-4 w-4" /> {g.member_count} members
+              <Users className="h-4 w-4" /> <meta itemProp="numberOfEmployees" content={String(g.member_count)} />{g.member_count} members
             </span>
           </div>
           {g.description && (
-            <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{g.description}</p>
+            <p className="mt-3 text-sm text-muted-foreground leading-relaxed" itemProp="description">{g.description}</p>
           )}
-          <div className="mt-3">
+          <div className="mt-3 flex flex-wrap items-center gap-3">
             <FollowButton groupId={g.id} name={g.name} variant="group" />
+            <ShareButtons url={`${SITE_URL}/group/${slug}`} title={`${g.name} — K-pop Group Profile`} />
           </div>
         </div>
       </div>

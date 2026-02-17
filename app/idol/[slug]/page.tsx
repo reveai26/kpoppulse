@@ -7,6 +7,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JsonLd, personJsonLd, breadcrumbJsonLd, faqJsonLd } from "@/lib/jsonld";
 import { FollowButton } from "@/components/follow-button";
+import { ShareButtons } from "@/components/share-buttons";
 import { SITE_URL } from "@/lib/constants";
 import type { Group, Idol } from "@/types";
 import type { Metadata } from "next";
@@ -114,10 +115,10 @@ export default async function IdolPage({ params }: Props) {
       </nav>
 
       {/* Idol Header */}
-      <div className="mb-6 flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6">
+      <div className="mb-6 flex flex-col items-center gap-4 sm:flex-row sm:items-start sm:gap-6" itemScope itemType="https://schema.org/Person">
         <div className="h-28 w-28 flex-shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 ring-2 ring-primary/10">
           {i.photo_url ? (
-            <img src={i.photo_url} alt={i.name} className="h-full w-full object-cover" />
+            <img src={i.photo_url} alt={i.name} itemProp="image" className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-4xl font-bold text-primary/60">
               {i.name[0]}
@@ -126,41 +127,44 @@ export default async function IdolPage({ params }: Props) {
         </div>
         <div className="flex-1 text-center sm:text-left">
           <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start sm:gap-3">
-            <h1 className="text-2xl font-bold">{i.name}</h1>
-            <Badge variant="secondary">{i.name_ko}</Badge>
+            <h1 className="text-2xl font-bold" itemProp="name">{i.name}</h1>
+            <Badge variant="secondary"><span itemProp="alternateName">{i.name_ko}</span></Badge>
             {i.group && (
-              <Link href={`/group/${i.group.slug}`}>
-                <Badge variant="outline" className="hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer">
-                  {i.group.name}
-                </Badge>
-              </Link>
+              <span itemProp="memberOf" itemScope itemType="https://schema.org/MusicGroup">
+                <Link href={`/group/${i.group.slug}`}>
+                  <Badge variant="outline" className="hover:bg-primary hover:text-primary-foreground transition-colors cursor-pointer">
+                    <span itemProp="name">{i.group.name}</span>
+                  </Badge>
+                </Link>
+              </span>
             )}
           </div>
 
           <div className="mt-2 flex flex-wrap justify-center gap-3 text-sm text-muted-foreground sm:justify-start sm:gap-4">
             {i.position && (
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1" itemProp="jobTitle">
                 <Star className="h-4 w-4" /> {i.position}
               </span>
             )}
             {i.birth_date && (
               <span className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" /> {i.birth_date}
+                <Calendar className="h-4 w-4" /> <time itemProp="birthDate" content={i.birth_date}>{i.birth_date}</time>
               </span>
             )}
             {i.nationality && (
-              <span className="flex items-center gap-1">
-                <MapPin className="h-4 w-4" /> {i.nationality}
+              <span className="flex items-center gap-1" itemProp="nationality" itemScope itemType="https://schema.org/Country">
+                <MapPin className="h-4 w-4" /> <span itemProp="name">{i.nationality}</span>
               </span>
             )}
           </div>
 
           {i.description && (
-            <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{i.description}</p>
+            <p className="mt-3 text-sm text-muted-foreground leading-relaxed" itemProp="description">{i.description}</p>
           )}
 
-          <div className="mt-3">
+          <div className="mt-3 flex flex-wrap items-center gap-3">
             <FollowButton idolId={i.id} name={i.name} variant="idol" />
+            <ShareButtons url={`${SITE_URL}/idol/${slug}`} title={`${i.name} — K-pop Idol Profile`} />
           </div>
         </div>
       </div>

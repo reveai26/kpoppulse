@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const PRODUCTION_URL = "https://kpoppulse.aireve26.workers.dev";
+const PRODUCTION_URL = "https://kpoppulse.app";
 
 export default function robots(): MetadataRoute.Robots {
   return {

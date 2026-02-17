@@ -6,11 +6,26 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { TrendingUp, Newspaper, Users, Flame, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { getPreferredLanguage } from "@/lib/i18n";
 import type { Group, Idol, ArticleWithDetails } from "@/types";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Latest K-pop News — AI Translated in Real-time | KpopPulse",
+  description: "Discover real-time AI-translated K-pop news. Follow BTS, BLACKPINK, aespa, NewJeans and 90+ idols. Personalized feeds, daily digests, and trending updates.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    title: "KpopPulse — Real-time K-pop News",
+    description: "AI-translated K-pop news from 15+ Korean sources. Follow your favorite idols and groups for personalized updates.",
+    url: "/",
+  },
+};
 
 export const revalidate = 300;
 
 export default async function HomePage() {
+  const lang = await getPreferredLanguage();
   const supabase = await createClient();
 
   const [
@@ -50,13 +65,18 @@ export default async function HomePage() {
   const idols = (topIdols ?? []) as (Idol & { group: Group })[];
   const groups = (topGroups ?? []) as Group[];
 
-  const articles: ArticleWithDetails[] = (rawArticles ?? []).map((a: any) => ({
-    ...a,
-    source: a.source,
-    translation: a.translations?.[0] ?? { translated_title: a.original_title, translated_summary: "" },
-    mentioned_idols: (a.article_idols ?? []).map((ai: any) => ai.idol).filter(Boolean),
-    mentioned_groups: (a.article_groups ?? []).map((ag: any) => ag.group).filter(Boolean),
-  }));
+  const articles: ArticleWithDetails[] = (rawArticles ?? []).map((a: any) => {
+    const enTranslation = a.translations?.[0] ?? { translated_title: a.original_title, translated_summary: "" };
+    return {
+      ...a,
+      source: a.source,
+      translation: lang === "ko"
+        ? { translated_title: a.original_title, translated_summary: enTranslation.translated_summary, translated_content: a.original_content }
+        : enTranslation,
+      mentioned_idols: (a.article_idols ?? []).map((ai: any) => ai.idol).filter(Boolean),
+      mentioned_groups: (a.article_groups ?? []).map((ag: any) => ag.group).filter(Boolean),
+    };
+  });
 
   const hasArticles = articles.length > 0;
 

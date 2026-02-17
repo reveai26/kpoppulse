@@ -88,7 +88,7 @@ Seed data: 15 news sources, 40+ groups, 90+ idols
 |------|-------|
 | Worker Name | `kpoppulse` |
 | Worker URL | `https://kpoppulse.aireve26.workers.dev` |
-| Custom Domain | `kpoppulse.com` (미연결 — Reve가 Cloudflare에 zone 추가 필요) |
+| Custom Domain | `https://kpoppulse.app` (Zone ID: `e7acc3399ff7c08bb3c0a37965c35fe6`) |
 | GitHub Repo | `reveai26/kpoppulse` (master branch) |
 | CI/CD | GitHub Actions (`.github/workflows/deploy.yml`) |
 | Build | `next build --webpack` → `npx @opennextjs/cloudflare build` |
@@ -175,26 +175,30 @@ Seed data: 15 news sources, 40+ groups, 90+ idols
 - [x] Cloudflare Workers Secrets 설정 완료 (POLAR_*, RESEND_API_KEY)
 - [x] 결제 비활성화 (PAYMENTS_ENABLED = false) — 테스트 완료 전까지
 
-### 🔲 내일 할 일 (Phase 2 마무리 + Phase 3)
+### ✅ Phase 2 — 유저 기능 + 결제 활성화 (2026-02-17)
+- [x] /my-feed — 팔로우한 아이돌/그룹 뉴스만 모아보는 피드
+- [x] /my-idols — 내 팔로우 관리 대시보드 (요금제별 제한 표시)
+- [x] /bookmarks — 저장한 기사 + BookmarkButton 컴포넌트
+- [x] /settings — 유저 설정 (언어, 다이제스트 정보)
+- [x] Admin 페이지 auth guard (SUPER_ADMIN_EMAILS 체크)
+- [x] 헤더 유저 메뉴 완성 (My Feed, My Idols, Bookmarks, Settings, Plans & Billing)
+- [x] PAYMENTS_ENABLED = true (결제 활성화)
+- [x] billing-cards.tsx 업그레이드 버튼 활성화
+- [x] Polar Stripe Connect 온보딩 완료
 
-#### 결제 오픈 전 필수
-- [ ] Polar Stripe Connect 온보딩 (polar.sh → Settings → Stripe Connect) — 실결제 수령용
-- [ ] Resend 도메인 인증 (kpoppulse.com 또는 임시 도메인) — 이메일 발송 실패 방지
-- [ ] Checkout → Webhook → DB 동기화 전체 플로우 테스트 (sandbox or 실결제)
-- [ ] 테스트 완료 후 `PAYMENTS_ENABLED = true` 로 변경 + 재배포
-- [ ] billing-cards.tsx "Coming Soon" → 원래 "Upgrade to Pro/Premium" 버튼 복원
+### ✅ 도메인 마이그레이션 (2026-02-17)
+- [x] kpoppulse.app 도메인 구매 (Cloudflare)
+- [x] Cloudflare Workers 도메인 바인딩 (kpoppulse.app + www.kpoppulse.app)
+- [x] Supabase Auth redirect URL 업데이트
+- [x] 코드 9개 파일 도메인 변경 (env, constants, layout, robots, checkout, daily-digest, email, deploy.yml, CLAUDE.md)
+- [x] 배포 + 도메인 정상 작동 확인
 
-#### Auth 관련 페이지
-- [ ] /my-feed — 팔로우한 아이돌/그룹 뉴스만 모아보는 피드
-- [ ] /my-idols — 내 팔로우 관리 대시보드
-- [ ] /bookmarks — 저장한 기사 (bookmarks 테이블 활용)
-- [ ] /settings — 유저 설정 (언어, 다이제스트 on/off 등)
+### 🔲 남은 작업
 
-#### 도메인 & 인프라
-- [ ] kpoppulse.com 커스텀 도메인 연결 (Cloudflare Zone 추가 → Workers 도메인 바인딩)
-- [ ] Supabase Auth redirect URL에 커스텀 도메인 추가
-- [ ] Google Cloud OAuth에 커스텀 도메인 등록
-- [ ] .env.production, sitemap, robots, 메타데이터에 도메인 반영
+#### Reve 액션 필요
+- [ ] Google Cloud Console → Authorized JS Origins에 `https://kpoppulse.app` 추가 (Google OAuth 로그인 활성화)
+- [ ] GitHub repo `reveai26/kpoppulse` → Settings → Secrets → `CLOUDFLARE_API_TOKEN` 추가 (CI/CD 활성화)
+- [ ] Resend 도메인 인증 (kpoppulse.app) — 이메일 발송용
 
 #### Phase 3 — 그로스
 - [ ] Product Hunt 런칭 준비

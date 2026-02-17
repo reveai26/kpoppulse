@@ -6,34 +6,40 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const baseUrl = new URL(request.url).origin;
-  const headers = { authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}` };
+  // Use the public URL to avoid self-referencing subrequest issues on Workers
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || new URL(request.url).origin;
+  const headers: Record<string, string> = {
+    authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+    "content-type": "application/json",
+  };
   const errors: string[] = [];
+  let collectResult = null;
+  let translateResult = null;
 
-  // Step 1: Collect
+  // Step 1: Collect articles from RSS feeds
   try {
     const collectRes = await fetch(`${baseUrl}/api/pipeline/collect`, {
       method: "POST",
       headers,
+      signal: AbortSignal.timeout(25000),
     });
-    const collectData = await collectRes.json();
-    if (!collectRes.ok) errors.push(`Collect failed: ${JSON.stringify(collectData)}`);
+    collectResult = await collectRes.json();
+    if (!collectRes.ok) errors.push(`Collect failed: ${JSON.stringify(collectResult)}`);
   } catch (e: any) {
     errors.push(`Collect error: ${e.message}`);
   }
 
-  // Step 2: Translate (run twice to process more articles)
-  for (let batch = 1; batch <= 2; batch++) {
-    try {
-      const translateRes = await fetch(`${baseUrl}/api/pipeline/translate?limit=10`, {
-        method: "POST",
-        headers,
-      });
-      const translateData = await translateRes.json();
-      if (!translateRes.ok) errors.push(`Translate batch ${batch}: ${JSON.stringify(translateData)}`);
-    } catch (e: any) {
-      errors.push(`Translate batch ${batch} error: ${e.message}`);
-    }
+  // Step 2: Translate (single batch to stay within time limits)
+  try {
+    const translateRes = await fetch(`${baseUrl}/api/pipeline/translate?limit=10`, {
+      method: "POST",
+      headers,
+      signal: AbortSignal.timeout(25000),
+    });
+    translateResult = await translateRes.json();
+    if (!translateRes.ok) errors.push(`Translate: ${JSON.stringify(translateResult)}`);
+  } catch (e: any) {
+    errors.push(`Translate error: ${e.message}`);
   }
 
   // Daily Digest: run once per day at ~09:00 UTC (cron runs every 15min)
@@ -44,6 +50,7 @@ export async function GET(request: NextRequest) {
     try {
       const digestRes = await fetch(`${baseUrl}/api/cron/daily-digest`, {
         headers,
+        signal: AbortSignal.timeout(25000),
       });
       digestResult = await digestRes.json();
       if (!digestRes.ok) errors.push(`Digest failed: ${JSON.stringify(digestResult)}`);
@@ -54,8 +61,10 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     success: errors.length === 0,
-    errors: errors.slice(0, 10),
+    collect: collectResult,
+    translate: translateResult,
     digest: digestResult,
+    errors: errors.slice(0, 10),
     timestamp: new Date().toISOString(),
   });
 }

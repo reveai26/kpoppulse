@@ -1,0 +1,45 @@
+# KpopPulse
+
+> Real-time AI-translated K-pop news, personalized by your favorite idols.
+
+## About
+KpopPulse is a K-pop news aggregation service that collects articles from 15+ Korean news sources and translates them to English using AI. Users can follow their favorite idols and groups to get personalized news feeds and daily email digests.
+
+## Data
+- 40+ K-pop groups (BTS, BLACKPINK, aespa, NewJeans, SEVENTEEN, Stray Kids, etc.)
+- 90+ K-pop idols with detailed profiles
+- News articles updated every 15 minutes from Korean sources
+- AI-translated to English with summaries
+
+## Features
+- Real-time translated K-pop news feed
+- Idol and group profiles with member information
+- Follow system for personalized news
+- Daily email digest for subscribers
+- Trending idols and groups
+- Full-text search (English and Korean)
+- Bookmarks for saving articles
+
+## Pricing
+- Free: 20 articles/day, follow up to 3 idols
+- Pro ($4.99/mo): 200 articles/day, follow up to 20 idols, daily digest email
+- Premium ($9.99/mo): Unlimited articles and follows, multi-language translations
+
+## URL Structure
+- Homepage (news feed): https://kpoppulse.app
+- Idol profile: https://kpoppulse.app/idol/{slug}
+- Group profile: https://kpoppulse.app/group/{slug}
+- Article: https://kpoppulse.app/article/{id}
+- Search: https://kpoppulse.app/search?q={query}
+- Trending: https://kpoppulse.app/trending
+- All groups: https://kpoppulse.app/groups
+- All idols: https://kpoppulse.app/idols
+
+## News Sources
+AllKpop, Soompi, Koreaboo, Dispatch, Sports Seoul, Naver Entertainment, Chosun Ilbo, MK Sports, Star News, Seoul Economy, Newsen, Ten Asia, OSEN, Herald POP, Sports Donga
+
+## Contact
+support@kpoppulse.app
+
+## Last Updated
+2026-02-17

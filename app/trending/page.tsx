@@ -5,6 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { TrendingUp, Users, Flame } from "lucide-react";
 import { JsonLd, collectionPageJsonLd } from "@/lib/jsonld";
 import { SITE_URL } from "@/lib/constants";
+import Link from "next/link";
 import type { Group, Idol } from "@/types";
 import type { Metadata } from "next";
 
@@ -29,8 +30,7 @@ export default async function TrendingPage() {
       supabase
         .from("idols")
         .select("*, group:groups(*)")
-        .order("popularity_score", { ascending: false })
-        .limit(50),
+        .order("popularity_score", { ascending: false }),
       supabase
         .from("groups")
         .select("*")
@@ -42,6 +42,27 @@ export default async function TrendingPage() {
 
   const idols = (allIdols ?? []) as (Idol & { group: Group })[];
   const groups = (allGroups ?? []) as Group[];
+
+  // Group idols by their group, sorted by group popularity
+  const groupedIdols = new Map<string, { group: Group; members: (Idol & { group: Group })[] }>();
+  const soloIdols: (Idol & { group: Group })[] = [];
+
+  for (const idol of idols) {
+    if (idol.group) {
+      const key = idol.group.id;
+      if (!groupedIdols.has(key)) {
+        groupedIdols.set(key, { group: idol.group, members: [] });
+      }
+      groupedIdols.get(key)!.members.push(idol);
+    } else {
+      soloIdols.push(idol);
+    }
+  }
+
+  // Sort groups by popularity score
+  const sortedGroups = [...groupedIdols.values()].sort(
+    (a, b) => b.group.popularity_score - a.group.popularity_score,
+  );
 
   const allItems = [
     ...idols.map((idol) => ({ name: idol.name, url: `${SITE_URL}/idol/${idol.slug}` })),
@@ -71,19 +92,64 @@ export default async function TrendingPage() {
         </div>
       ) : (
         <div className="space-y-8">
-          {/* Buzzing Idols */}
+          {/* Buzzing Idols — grouped by group */}
           <section>
-            <h2 className="mb-4 flex items-center gap-2 font-bold text-lg">
+            <h2 className="mb-6 flex items-center gap-2 font-bold text-lg">
               <Flame className="h-5 w-5 text-orange-500" />
               Buzzing Idols
             </h2>
-            {idols.length === 0 ? (
+            {sortedGroups.length === 0 ? (
               <p className="py-8 text-center text-muted-foreground">No idol data yet</p>
             ) : (
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {idols.map((idol) => (
-                  <IdolCard key={idol.id} idol={idol} />
+              <div className="space-y-6">
+                {sortedGroups.map(({ group, members }) => (
+                  <div key={group.id} className="rounded-lg border bg-card/50 p-4">
+                    <Link
+                      href={`/group/${group.slug}`}
+                      className="mb-3 flex items-center gap-3 group/header"
+                    >
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 ring-2 ring-primary/20">
+                        {group.photo_url ? (
+                          <img src={group.photo_url} alt={group.name} className="h-full w-full rounded-full object-cover" />
+                        ) : (
+                          <span className="text-sm font-bold text-primary">{group.name[0]}</span>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm group-hover/header:text-primary transition-colors">
+                          {group.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {group.name_ko} · {group.agency.split(" (")[0]} · {members.length} members
+                        </p>
+                      </div>
+                    </Link>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      {members.map((idol) => (
+                        <IdolCard key={idol.id} idol={idol} showGroup={false} />
+                      ))}
+                    </div>
+                  </div>
                 ))}
+
+                {soloIdols.length > 0 && (
+                  <div className="rounded-lg border bg-card/50 p-4">
+                    <div className="mb-3 flex items-center gap-3">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-muted ring-2 ring-muted-foreground/20">
+                        <Users className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <p className="font-bold text-sm">Solo Artists</p>
+                        <p className="text-xs text-muted-foreground">{soloIdols.length} artists</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      {soloIdols.map((idol) => (
+                        <IdolCard key={idol.id} idol={idol} showGroup={false} />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </section>

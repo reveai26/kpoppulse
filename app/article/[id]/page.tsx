@@ -4,9 +4,11 @@ import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Clock, ExternalLink, Newspaper } from "lucide-react";
 import { BookmarkButton } from "@/components/bookmark-button";
+import { ShareButtons } from "@/components/share-buttons";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
+import { getPreferredLanguage } from "@/lib/i18n";
 import { JsonLd, newsArticleJsonLd, breadcrumbJsonLd } from "@/lib/jsonld";
 import { SITE_URL } from "@/lib/constants";
 import type { ArticleWithDetails } from "@/types";
@@ -50,13 +52,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: article.thumbnail_url ? "summary_large_image" : "summary",
       title,
       description,
-      images: article.thumbnail_url ? [article.thumbnail_url] : [],
+      images: article.thumbnail_url ? [article.thumbnail_url] : ["/icon.svg"],
     },
   };
 }
 
 export default async function ArticlePage({ params }: Props) {
   const { id } = await params;
+  const lang = await getPreferredLanguage();
   const supabase = await createClient();
 
   const { data: rawArticle } = await supabase
@@ -74,13 +77,17 @@ export default async function ArticlePage({ params }: Props) {
 
   if (!rawArticle) notFound();
 
+  const enTranslation = (rawArticle as any).translations?.[0] ?? {
+    translated_title: rawArticle.original_title,
+    translated_summary: "",
+  };
+
   const article: ArticleWithDetails = {
     ...rawArticle,
     source: rawArticle.source,
-    translation: (rawArticle as any).translations?.[0] ?? {
-      translated_title: rawArticle.original_title,
-      translated_summary: "",
-    },
+    translation: lang === "ko"
+      ? { translated_title: rawArticle.original_title, translated_summary: enTranslation.translated_summary, translated_content: rawArticle.original_content }
+      : enTranslation,
     mentioned_idols: ((rawArticle as any).article_idols ?? [])
       .map((ai: any) => ai.idol)
       .filter(Boolean),
@@ -200,6 +207,15 @@ export default async function ArticlePage({ params }: Props) {
             </p>
           </div>
         )}
+
+        {/* Share */}
+        <div className="mb-6">
+          <p className="text-xs text-muted-foreground mb-2">Share this article</p>
+          <ShareButtons
+            url={`${SITE_URL}/article/${id}`}
+            title={article.translation.translated_title}
+          />
+        </div>
 
         <Separator className="mb-6" />
 
