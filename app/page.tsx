@@ -4,10 +4,10 @@ import { GroupCard } from "@/components/group-card";
 import { ArticleCard } from "@/components/article-card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { TrendingUp, Newspaper, Users, Flame, Sparkles } from "lucide-react";
+import { TrendingUp, Newspaper, Users, Flame, Sparkles, Music, CalendarDays, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { getPreferredLanguage } from "@/lib/i18n";
-import type { Group, Idol, ArticleWithDetails } from "@/types";
+import type { Group, Idol, ArticleWithDetails, ArticleTopic } from "@/types";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -55,7 +55,7 @@ export default async function HomePage() {
       .eq("is_translated", true)
       .eq("translations.language", "en")
       .order("published_at", { ascending: false })
-      .limit(30),
+      .limit(50),
   ]);
 
   if (idolsError) console.error("Home idols query error:", idolsError.message);
@@ -116,7 +116,7 @@ export default async function HomePage() {
           </div>
         </aside>
 
-        {/* CENTER — News Feed */}
+        {/* CENTER — News Feed by Topic */}
         <section>
           <div className="mb-4 flex items-center gap-2">
             <Newspaper className="h-5 w-5 text-primary" />
@@ -126,11 +126,32 @@ export default async function HomePage() {
 
           <div className="space-y-6">
             {hasArticles ? (
-              <div className="space-y-3">
-                {articles.map((article) => (
-                  <ArticleCard key={article.id} article={article} />
-                ))}
-              </div>
+              <>
+                {(["music", "events", "buzz"] as ArticleTopic[]).map((topic) => {
+                  const topicArticles = articles.filter((a) => (a.topic ?? "buzz") === topic);
+                  if (topicArticles.length === 0) return null;
+                  const config = {
+                    music: { icon: Music, label: "Music & Releases", color: "text-violet-500" },
+                    events: { icon: CalendarDays, label: "Events & Shows", color: "text-blue-500" },
+                    buzz: { icon: MessageCircle, label: "Buzz & Updates", color: "text-orange-500" },
+                  }[topic];
+                  const Icon = config.icon;
+                  return (
+                    <div key={topic}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Icon className={`h-4 w-4 ${config.color}`} />
+                        <h2 className="font-bold text-sm">{config.label}</h2>
+                        <Badge variant="outline" className="ml-1 text-[10px]">{topicArticles.length}</Badge>
+                      </div>
+                      <div className="space-y-2">
+                        {topicArticles.slice(0, 10).map((article) => (
+                          <ArticleCard key={article.id} article={article} />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
             ) : (
               <div className="rounded-xl border-2 border-dashed border-primary/20 p-8 text-center">
                 <Sparkles className="mx-auto h-12 w-12 text-primary/40 mb-3" />

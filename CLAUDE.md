@@ -53,6 +53,8 @@
 - `/group/[slug]` — Group profile + members
 - `/idol/[slug]` — Idol profile + member-level news
 - `/article/[id]` — Article detail page
+- `/weekly` — Weekly roundup index (all groups)
+- `/weekly/[slug]/[date]` — Weekly roundup detail (SEO pages)
 - `/search?q=` — Search results
 - `/login` — Google OAuth
 
@@ -69,14 +71,15 @@
 - `/api/pipeline/translate` — AI translation (Workers AI)
 - `/api/pipeline/status` — Pipeline statistics
 - `/api/cron/news` — Automated news pipeline (cron trigger)
+- `/api/cron/weekly-roundup` — Weekly news roundup generation (Monday 10:00 UTC)
 
 ---
 
-## Database (12 tables)
+## Database (13 tables)
 
 sources, groups, idols, articles, translations,
 article_idols, article_groups, profiles, follows,
-bookmarks, subscriptions
+bookmarks, subscriptions, weekly_roundups
 
 Seed data: 15 news sources, 40+ groups, 90+ idols
 
@@ -200,11 +203,19 @@ Seed data: 15 news sources, 40+ groups, 90+ idols
 - [ ] GitHub repo `reveai26/kpoppulse` → Settings → Secrets → `CLOUDFLARE_API_TOKEN` 추가 (CI/CD 활성화)
 - [ ] Resend 도메인 인증 (kpoppulse.app) — 이메일 발송용
 
-#### Phase 3 — 그로스
+### ✅ Phase 3 — SEO/GEO + 소셜 + i18n (2026-02-17)
+- [x] SEO/GEO 최적화 (llms.txt, JSON-LD mentions, microdata, sitemap 1000)
+- [x] 소셜 공유 기능 (X, Facebook, Copy Link, Native Share)
+- [x] 다국어 지원 (5 languages, cookie-based language switcher)
+- [x] Weekly News Roundup — AI 자동 주간 뉴스 요약 (BTS, BLACKPINK, Stray Kids + top 10)
+  - weekly_roundups DB 테이블
+  - /api/cron/weekly-roundup — 매주 월요일 10:00 UTC 자동 생성
+  - /weekly — 인덱스 페이지
+  - /weekly/[slug]/[date] — 그룹별 주간 요약 상세 페이지
+  - 사이트맵 자동 포함, BlogPosting JSON-LD
+
+#### Phase 4 — 그로스
 - [ ] Product Hunt 런칭 준비
-- [ ] SEO 최적화 (구조화 데이터 보강, 아이돌별 페이지 meta)
-- [ ] 소셜 공유 기능
-- [ ] 다국어 지원 (i18n)
 
 ---
 

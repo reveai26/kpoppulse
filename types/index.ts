@@ -45,6 +45,8 @@ export type Source = {
   is_active: boolean;
 };
 
+export type ArticleTopic = "music" | "events" | "buzz";
+
 export type Article = {
   id: string;
   source_id: string;
@@ -52,6 +54,7 @@ export type Article = {
   original_title: string;
   original_content: string | null;
   thumbnail_url: string | null;
+  topic: ArticleTopic;
   is_translated: boolean;
   is_tagged: boolean;
   published_at: string;

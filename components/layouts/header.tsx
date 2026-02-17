@@ -19,6 +19,7 @@ const NAV_ITEMS = [
   { href: "/trending", label: "Trending" },
   { href: "/groups", label: "Groups" },
   { href: "/idols", label: "Idols" },
+  { href: "/weekly", label: "Weekly" },
 ];
 
 export const Header = () => {

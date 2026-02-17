@@ -83,12 +83,12 @@ export async function POST(request: NextRequest) {
   const translations: any[] = [];
   const idolTags: any[] = [];
   const groupTags: any[] = [];
-  const translatedIds: string[] = [];
+  const translatedIds: { id: string; topic: string }[] = [];
   const errors: string[] = [];
 
   for (const article of articles) {
     try {
-      const prompt = `You are a K-pop news translator. Translate this Korean news headline into natural, engaging English. Then write a 1-2 sentence summary that provides context for international K-pop fans.
+      const prompt = `You are a K-pop news translator. Translate this Korean news headline into natural, engaging English. Then write a 1-2 sentence summary and classify the topic.
 
 Korean headline: ${article.original_title}
 ${article.original_content ? `\nContext: ${article.original_content.substring(0, 500)}` : ""}
@@ -97,9 +97,10 @@ Important:
 - Keep idol/group names in their official romanized form (e.g., 방탄소년단 = BTS, 블랙핑크 = BLACKPINK, 에스파 = aespa, 뉴진스 = NewJeans)
 - Make the title concise and news-like
 - The summary should explain what happened and why it matters to fans
+- Classify the topic as one of: "music" (comebacks, releases, charts, music shows), "events" (concerts, fan meetings, awards, variety shows), or "buzz" (everything else: dating, social media, general news)
 
 Respond ONLY with valid JSON (no markdown, no explanation):
-{"title": "English title here", "summary": "1-2 sentence summary here"}`;
+{"title": "English title here", "summary": "1-2 sentence summary here", "topic": "music|events|buzz"}`;
 
       const aiResult = await ai.run("@cf/meta/llama-3.1-8b-instruct", {
         messages: [{ role: "user", content: prompt }],
@@ -136,6 +137,10 @@ Respond ONLY with valid JSON (no markdown, no explanation):
         continue;
       }
 
+      // Validate topic
+      const validTopics = ["music", "events", "buzz"];
+      const topic = validTopics.includes(result.topic) ? result.topic : "buzz";
+
       translations.push({
         article_id: article.id,
         language: "en",
@@ -143,7 +148,7 @@ Respond ONLY with valid JSON (no markdown, no explanation):
         translated_summary: result.summary,
         model_used: "llama-3.1-8b",
       });
-      translatedIds.push(article.id);
+      translatedIds.push({ id: article.id, topic });
 
       // Find matching idols and groups with improved accuracy
       const originalText = article.original_title + " " + (article.original_content ?? "");
@@ -203,14 +208,22 @@ Respond ONLY with valid JSON (no markdown, no explanation):
     }
   }
 
-  // Batch mark articles as translated
+  // Batch mark articles as translated + set topic per article
   if (translatedIds.length > 0) {
-    const { error: updateError } = await serviceClient
-      .from("articles")
-      .update({ is_translated: true, is_tagged: true })
-      .in("id", translatedIds);
-    if (updateError) {
-      errors.push(`Articles update: ${updateError.message}`);
+    // Group by topic for batch updates
+    const byTopic = new Map<string, string[]>();
+    for (const { id, topic } of translatedIds) {
+      if (!byTopic.has(topic)) byTopic.set(topic, []);
+      byTopic.get(topic)!.push(id);
+    }
+    for (const [topic, ids] of byTopic) {
+      const { error: updateError } = await serviceClient
+        .from("articles")
+        .update({ is_translated: true, is_tagged: true, topic })
+        .in("id", ids);
+      if (updateError) {
+        errors.push(`Articles update (${topic}): ${updateError.message}`);
+      }
     }
   }
 

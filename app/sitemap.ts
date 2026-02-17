@@ -5,7 +5,7 @@ import type { MetadataRoute } from "next";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createClient();
 
-  const [{ data: groups }, { data: idols }, { data: articles }] = await Promise.all([
+  const [{ data: groups }, { data: idols }, { data: articles }, { data: roundups }] = await Promise.all([
     supabase.from("groups").select("slug, created_at"),
     supabase.from("idols").select("slug, created_at"),
     supabase
@@ -14,6 +14,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .eq("is_translated", true)
       .order("published_at", { ascending: false })
       .limit(1000),
+    supabase
+      .from("weekly_roundups")
+      .select("week_start, created_at, group:groups(slug)")
+      .order("week_start", { ascending: false })
+      .limit(200),
   ]);
 
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -44,5 +49,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.5,
   }));
 
-  return [...staticRoutes, ...groupRoutes, ...idolRoutes, ...articleRoutes];
+  const roundupRoutes: MetadataRoute.Sitemap = (roundups ?? []).map((r: any) => ({
+    url: `${SITE_URL}/weekly/${r.group?.slug}/${r.week_start}`,
+    lastModified: new Date(r.created_at),
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  }));
+
+  const weeklyIndexRoute: MetadataRoute.Sitemap = roundups && roundups.length > 0
+    ? [{ url: `${SITE_URL}/weekly`, lastModified: new Date(), changeFrequency: "weekly" as const, priority: 0.7 }]
+    : [];
+
+  return [...staticRoutes, ...weeklyIndexRoute, ...groupRoutes, ...idolRoutes, ...roundupRoutes, ...articleRoutes];
 }
