@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Clock, ExternalLink, Newspaper } from "lucide-react";
+import { Clock, ExternalLink, Newspaper } from "lucide-react";
+import { BookmarkButton } from "@/components/bookmark-button";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
@@ -138,6 +139,7 @@ export default async function ArticlePage({ params }: Props) {
             <ExternalLink className="h-4 w-4" />
             Original Article
           </a>
+          <BookmarkButton articleId={article.id} />
         </div>
 
         {/* Tags */}

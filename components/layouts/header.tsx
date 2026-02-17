@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search, Menu, X, Sun, Moon, LogOut, CreditCard } from "lucide-react";
+import { Search, Menu, X, Sun, Moon, LogOut, CreditCard, Rss, Heart, Bookmark, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
@@ -149,6 +149,31 @@ export const Header = () => {
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href="/my-feed">
+                    <Rss className="mr-2 h-4 w-4" />
+                    My Feed
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href="/my-idols">
+                    <Heart className="mr-2 h-4 w-4" />
+                    My Idols
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href="/bookmarks">
+                    <Bookmark className="mr-2 h-4 w-4" />
+                    Bookmarks
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild className="cursor-pointer">
+                  <Link href="/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="cursor-pointer">
                   <Link href="/billing">
                     <CreditCard className="mr-2 h-4 w-4" />
                     Plans & Billing
@@ -203,14 +228,27 @@ export const Header = () => {
                       </Avatar>
                       <span className="text-sm truncate">{userName}</span>
                     </div>
-                    <Link
-                      href="/billing"
-                      onClick={() => setSheetOpen(false)}
-                      className="flex items-center gap-2 rounded-md px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                    >
-                      <CreditCard className="h-4 w-4" />
-                      Plans & Billing
-                    </Link>
+                    {[
+                      { href: "/my-feed", icon: Rss, label: "My Feed" },
+                      { href: "/my-idols", icon: Heart, label: "My Idols" },
+                      { href: "/bookmarks", icon: Bookmark, label: "Bookmarks" },
+                      { href: "/settings", icon: Settings, label: "Settings" },
+                      { href: "/billing", icon: CreditCard, label: "Plans & Billing" },
+                    ].map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setSheetOpen(false)}
+                        className={`flex items-center gap-2 rounded-md px-4 py-3 text-sm font-medium transition-colors ${
+                          isActive(item.href)
+                            ? "text-primary bg-primary/10"
+                            : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                        }`}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        {item.label}
+                      </Link>
+                    ))}
                     <Button
                       variant="outline"
                       size="sm"
